@@ -12,7 +12,6 @@ class TestRLAssessmentAgent(unittest.TestCase):
         self.agent = RLAssessmentAgent(self.env)
 
     def test_q_table_initialized(self):
-        # اتأكد إن Q-table اتبني صح
         self.assertIn(self.env.current_level, self.agent.q_table)
         self.assertIn('up', self.agent.q_table[self.env.current_level])
 

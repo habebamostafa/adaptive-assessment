@@ -101,7 +101,7 @@ def render_sidebar():
     }
     
     selected_track = st.sidebar.selectbox(
-        "اختر التخصص:",
+        "chosse track :",
         options=available_tracks,
         format_func=lambda x: track_descriptions.get(x, x.title()),
         key="track_selector"
@@ -111,24 +111,24 @@ def render_sidebar():
     st.sidebar.subheader("🤖 Agent Settings")
     
     agent_type = st.sidebar.selectbox(
-        "نوع الوكيل:",
+        "kind of agent :",
         options=["main", "conservative", "aggressive", "ensemble"],
         format_func=lambda x: {
-            "main": "🎯 متوازن",
-            "conservative": "🛡️ محافظ", 
-            "aggressive": "⚡ جريء",
-            "ensemble": "🎭 متعدد"
+            "main": "🎯 main",
+            "conservative": "🛡️ conservative", 
+            "aggressive": "⚡ aggressive",
+            "ensemble": "🎭 ensemble"
         }.get(x, x)
     )
     
     adaptation_strategy = st.sidebar.selectbox(
-        "استراتيجية التكيف:",
+        " strategy:",
         options=["rl_based", "conservative", "aggressive", "ability_based"],
         format_func=lambda x: {
-            "rl_based": "🧠 تعلم معزز",
-            "conservative": "🐌 محافظة",
-            "aggressive": "🚀 سريعة", 
-            "ability_based": "📈 حسب القدرة"
+            "rl_based": "🧠  rl_based",
+            "conservative": "🐌 conservative",
+            "aggressive": "🚀 aggressive", 
+            "ability_based": "📈 ability_based "
         }.get(x, x)
     )
     
@@ -136,7 +136,7 @@ def render_sidebar():
     st.sidebar.subheader("📋 Assessment Parameters")
     
     max_questions = st.sidebar.slider(
-        "الحد الأقصى للأسئلة:",
+        "maximum of questions  :",
         min_value=5,
         max_value=20,
         value=10,
@@ -144,7 +144,7 @@ def render_sidebar():
     )
     
     confidence_threshold = st.sidebar.slider(
-        "عتبة الثقة:",
+        "Confidence :",
         min_value=0.5,
         max_value=0.95,
         value=0.8,
@@ -158,7 +158,7 @@ def render_sidebar():
 def render_analytics():
     """Render analytics dashboard"""
     if not st.session_state.get("env") or not st.session_state.env.question_history:
-        st.warning("⚠️ لا توجد بيانات للعرض. يرجى إكمال بعض الأسئلة أولاً.")
+        st.warning("no data")
         return
     
     env = st.session_state.env
@@ -171,18 +171,18 @@ def render_analytics():
     
     with col1:
         total_questions = len(env.question_history)
-        st.metric("إجمالي الأسئلة", total_questions)
+        st.metric(" total questions", total_questions)
     
     with col2:
         correct_answers = sum(1 for q in env.question_history if q['is_correct'])
         accuracy = correct_answers / total_questions if total_questions > 0 else 0
-        st.metric("الدقة", f"{accuracy:.1%}")
+        st.metric("accuracy", f"{accuracy:.1%}")
     
     with col3:
-        st.metric("القدرة المقدرة", f"{env.student_ability:.1%}")
+        st.metric("ability ", f"{env.student_ability:.1%}")
     
     with col4:
-        st.metric("درجة الثقة", f"{env.confidence_score:.1%}")
+        st.metric("confident score ", f"{env.confidence_score:.1%}")
     
     # Progress visualization
     if len(env.performance_history) > 1:
@@ -286,7 +286,7 @@ def render_analytics():
 def render_question():
     """Render the current question"""
     if not st.session_state.current_question:
-        st.error("❌ خطأ: لم يتم العثور على سؤال.")
+        st.error("error")
         return
     
     q = st.session_state.current_question
@@ -296,15 +296,15 @@ def render_question():
     col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
-        st.markdown(f"### السؤال رقم {env.total_questions_asked}")
+        st.markdown(f"###  question number {env.total_questions_asked}")
     
     with col2:
         level_emoji = {1: "🟢", 2: "🟡", 3: "🔴"}
-        level_name = {1: "سهل", 2: "متوسط", 3: "صعب"}
-        st.markdown(f"**المستوى:** {level_emoji.get(env.current_level, '⚪')} {level_name.get(env.current_level, 'غير محدد')}")
+        level_name = {1: "easy", 2: "medium", 3: "hard"}
+        st.markdown(f"**levels:** {level_emoji.get(env.current_level, '⚪')} {level_name.get(env.current_level, ' uncertained')}")
     
     with col3:
-        st.markdown(f"**القدرة:** {env.student_ability:.1%}")
+        st.markdown(f"**ability:** {env.student_ability:.1%}")
     
     # Question content
     st.markdown(f"""
@@ -318,7 +318,7 @@ def render_question():
         st.session_state.selected_answer = None
     
     st.session_state.selected_answer = st.radio(
-        "اختر إجابة:",
+        " choesse answer :",
         q["options"],
         key=f"question_{env.total_questions_asked}",
         index=None
@@ -331,7 +331,7 @@ def render_question():
         confirm_disabled = (st.session_state.selected_answer is None or 
                           st.session_state.answer_confirmed)
         
-        if st.button("✅ تأكيد الإجابة", disabled=confirm_disabled):
+        if st.button("✅ confirm ", disabled=confirm_disabled):
             st.session_state.answer_confirmed = True
             st.rerun()
     
@@ -345,9 +345,9 @@ def render_question():
             # Show correct answer
             is_correct = q['correct_answer'] == st.session_state.selected_answer
             if is_correct:
-                st.success("🎉 إجابة صحيحة!")
+                st.success("🎉 correct !")
             else:
-                st.error(f"❌ إجابة خاطئة. الإجابة الصحيحة: {q['correct_answer']}")
+                st.error(f"❌ wrong ,the correct is  : {q['correct_answer']}")
             
             # Show explanation if available
             if 'explanation' in q:
@@ -413,8 +413,8 @@ def render_results():
     
     st.markdown("""
     <div class="success-message">
-        <h2 style="margin: 0;">🎉 تم إنهاء الاختبار بنجاح!</h2>
-        <p style="margin: 0.5rem 0 0 0;">إليك ملخص أدائك والتوصيات:</p>
+        <h2 style="margin: 0;">🎉 exam is done sucessfuly   !</h2>
+        <p style="margin: 0.5rem 0 0 0;"> your results  :</p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -426,44 +426,42 @@ def render_results():
     
     with col1:
         st.metric(
-            "النتيجة النهائية",
+            "final score ",
             f"{summary['correct_answers']}/{summary['total_questions']}",
             f"{summary['final_score']:.1%}"
         )
     
     with col2:
         st.metric(
-            "القدرة المقدرة",
+            " ability",
             f"{summary['final_ability']:.1%}",
-            help="تقدير نهائي لقدرة الطالب"
         )
     
     with col3:
         st.metric(
-            "درجة الثقة",
+            "confident ",
             f"{summary['confidence_score']:.1%}",
-            help="مدى ثقة النظام في التقدير"
         )
     
     with col4:
         recommended_level = summary['recommended_level']
-        level_names = {1: "مبتدئ", 2: "متوسط", 3: "متقدم"}
+        level_names = {1: "beginner", 2: "intermediate", 3: "advanced"}
         st.metric(
-            "المستوى الموصى به",
-            level_names.get(recommended_level, "غير محدد")
+            "  recommded level",
+            level_names.get(recommended_level, "uncertained ")
         )
     
     # Performance by level
-    st.subheader("📊 الأداء حسب المستوى")
+    st.subheader("📊  Performance by level ")
     
     if summary['level_performance']:
         level_data = []
         for level, perf in summary['level_performance'].items():
             level_data.append({
-                'المستوى': f"Level {level}",
-                'عدد الأسئلة': perf['questions'],
-                'الإجابات الصحيحة': perf['correct'],
-                'نسبة الدقة': f"{perf['accuracy']:.1%}"
+                'Level': f"Level {level}",
+                ' questions': perf['questions'],
+                ' correct answers': perf['correct'],
+                ' accuracy': f"{perf['accuracy']:.1%}"
             })
         
         df = pd.DataFrame(level_data)
@@ -472,125 +470,24 @@ def render_results():
         # Visualization
         fig = px.bar(
             df, 
-            x='المستوى', 
-            y='نسبة الدقة',
-            title="الأداء حسب مستوى الصعوبة",
-            color='نسبة الدقة',
+            x='Level', 
+            y=' accuracy',
+            title=" Performance by level",
+            color=' accuracy',
             color_continuous_scale='RdYlGn'
         )
         st.plotly_chart(fig, use_container_width=True)
     
     # Detailed recommendations
-    st.subheader("💡 التوصيات والخطوات التالية")
-    
-    ability = summary['final_ability']
-    
-    if ability < 0.3:
-        recommendations = [
-            "🔍 ركز على المفاهيم الأساسية في هذا المجال",
-            "📚 ادرس المواد التعليمية للمبتدئين",
-            "🤝 اطلب المساعدة من خبير في المجال",
-            "⏰ خذ وقتك الكافي لفهم الأساسيات"
-        ]
-        st.info("💪 أنت في بداية رحلة التعلم. لا تيأس!")
-        
-    elif ability < 0.7:
-        recommendations = [
-            "📈 أنت في المسار الصحيح، استمر في التطوير",
-            "🎯 ركز على الجوانب العملية والتطبيقية",
-            "📋 حل المزيد من التمارين والمشاكل الواقعية",
-            "🔄 راجع النقاط التي واجهت صعوبة فيها"
-        ]
-        st.success("👍 أداء جيد! يمكنك التحسن أكثر")
-        
-    else:
-        recommendations = [
-            "🏆 أداء ممتاز! أنت تتقن هذا المجال",
-            "🚀 فكر في تعلم مواضيع متقدمة أكثر",
-            "👨‍🏫 يمكنك مساعدة الآخرين في التعلم",
-            "🔬 اعمل على مشاريع تحدي في هذا المجال"
-        ]
-        st.balloons()
-        st.success("🌟 أداء استثنائي! تهانينا!")
-    
-    for rec in recommendations:
-        st.write(rec)
-    
-    # Learning path suggestions
-    st.subheader("🛣️ مسار التعلم المقترح")
-    
-    track = env.track
-    track_resources = {
-        "web": {
-            "beginner": ["HTML/CSS أساسيات", "JavaScript للمبتدئين", "مشاريع بسيطة"],
-            "intermediate": ["React أو Vue.js", "Node.js", "قواعد البيانات"],
-            "advanced": ["مفاهيم متقدمة في الفريمووركات", "DevOps", "الأمان في التطبيقات"]
-        },
-        "ai": {
-            "beginner": ["أساسيات Python", "مفاهيم الذكاء الاصطناعي", "Pandas و NumPy"],
-            "intermediate": ["Machine Learning", "TensorFlow أو PyTorch", "معالجة البيانات"],
-            "advanced": ["Deep Learning", "NLP", "Computer Vision"]
-        },
-        "cyber": {
-            "beginner": ["أساسيات الأمان", "الشبكات", "أنظمة التشغيل"],
-            "intermediate": ["Penetration Testing", "الاستجابة للحوادث", "أدوات الأمان"],
-            "advanced": ["Malware Analysis", "Red Team Operations", "Security Architecture"]
-        },
-        "data": {
-            "beginner": ["إحصاء أساسي", "Python أو R", "Excel المتقدم"],
-            "intermediate": ["تحليل البيانات", "تصوير البيانات", "SQL"],
-            "advanced": ["Machine Learning", "Big Data", "Data Engineering"]
-        },
-        "mobile": {
-            "beginner": ["أساسيات البرمجة", "UI/UX Design", "مفاهيم التطبيقات"],
-            "intermediate": ["Native Development", "Cross-platform", "قواعد البيانات المحلية"],
-            "advanced": ["Performance Optimization", "CI/CD للتطبيقات", "Architecture Patterns"]
-        },
-        "devops": {
-            "beginner": ["Linux أساسيات", "Git", "مفاهيم الخوادم"],
-            "intermediate": ["Docker", "CI/CD", "Cloud Platforms"],
-            "advanced": ["Kubernetes", "Infrastructure as Code", "Monitoring"]
-        }
-    }
-    
-    if recommended_level == 1:
-        level_key = "beginner"
-    elif recommended_level == 2:
-        level_key = "intermediate"
-    else:
-        level_key = "advanced"
-    
-    if track in track_resources:
-        resources = track_resources[track][level_key]
-        for i, resource in enumerate(resources, 1):
-            st.write(f"{i}. {resource}")
-    
-    # Export options
-    st.subheader("📥 تصدير النتائج")
-    
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        if st.button("📊 تصدير تقرير مفصل"):
-            filename = env.export_session_data()
-            st.success(f"تم حفظ التقرير في: {filename}")
-    
-    with col2:
-        if st.button("🤖 حفظ نموذج الوكيل"):
-            filename = agent.save_model()
-            st.success(f"تم حفظ النموذج في: {filename}")
-    
-    with col3:
-        if st.button("📈 عرض التحليلات المتقدمة"):
-            st.session_state.show_analytics = True
-            st.rerun()
+    st.subheader("💡 recommendations and next step ")
+
     
     # Restart option
     st.markdown("---")
     col1, col2 = st.columns(2)
     
     with col1:
-        if st.button("🔄 إعادة الاختبار", type="primary"):
+        if st.button("🔄 Restart exam ", type="primary"):
             # Reset session state
             for key in list(st.session_state.keys()):
                 if key not in ['track_selector']:  # Keep track selection
@@ -598,7 +495,7 @@ def render_results():
             st.rerun()
     
     with col2:
-        if st.button("📊 عرض لوحة التحليلات"):
+        if st.button("📊 show analytics  "):
             st.session_state.show_analytics = True
             st.rerun()
 
@@ -609,8 +506,8 @@ def main():
     # Header
     st.markdown("""
     <div class="main-header">
-        <h1>🎯 نظام التقييم التكيفي الذكي</h1>
-        <p>تقييم قدراتك التقنية باستخدام الذكاء الاصطناعي والتعلم المعزز</p>
+        <h1> smart adaptive learning system </h1>
+        <p>evaluate your technical skills /p>
     </div>
     """, unsafe_allow_html=True)
     
@@ -623,7 +520,7 @@ def main():
     
     # Navigation
     if st.session_state.show_analytics:
-        if st.button("← العودة للاختبار"):
+        if st.button("back to test"):
             st.session_state.show_analytics = False
             st.rerun()
         render_analytics()
@@ -632,7 +529,7 @@ def main():
     # Main content based on state
     if not st.session_state.initialized:
         # Welcome screen
-        st.header("🚀 ابدأ رحلة التقييم")
+        st.header("🚀 start your carrer  ")
         
         # Track statistics
         track_stats = get_question_statistics(selected_track)
@@ -640,20 +537,18 @@ def main():
         col1, col2 = st.columns(2)
         
         with col1:
-            st.subheader(f"📊 إحصائيات {selected_track.upper()}")
-            st.write(f"**إجمالي الأسئلة:** {track_stats['total_questions']}")
+            st.subheader(f"📊 statisc {selected_track.upper()}")
+            st.write(f"** total questions:** {track_stats['total_questions']}")
             
             for level, info in track_stats['levels'].items():
                 st.write(f"**{info['difficulty']}:** {info['count']} سؤال")
         
         with col2:
-            st.subheader("ℹ️ معلومات الاختبار")
-            st.write(f"**الحد الأقصى للأسئلة:** {max_questions}")
-            st.write(f"**عتبة الثقة:** {confidence_threshold:.0%}")
-            st.write(f"**نوع الوكيل:** {agent_type}")
-            st.write(f"**استراتيجية التكيف:** {adaptation_strategy}")
+            st.subheader("ℹ️ test info")
+            st.write(f"** max questions:** {max_questions}")
+
         
-        if st.button("🎯 بدء الاختبار", type="primary", use_container_width=True):
+        if st.button("🎯 start test", type="primary", use_container_width=True):
             # Initialize environment and agent
             st.session_state.env = AdaptiveAssessmentEnv(track=selected_track)
             st.session_state.env.max_questions = max_questions
@@ -672,7 +567,7 @@ def main():
                 st.session_state.initialized = True
                 st.rerun()
             else:
-                st.error("❌ خطأ: لم يتم العثور على أسئلة لهذا التخصص.")
+                st.error("❌ error")
     
     elif st.session_state.show_results:
         render_results()
@@ -682,7 +577,7 @@ def main():
         if st.session_state.current_question:
             render_question()
         else:
-            st.error("❌ خطأ: لم يتم العثور على سؤال.")
+            st.error("❌ error")
     
     # Progress indicator
     if st.session_state.initialized and not st.session_state.show_results:
@@ -690,18 +585,18 @@ def main():
         progress = min(env.total_questions_asked / env.max_questions, 1.0)
         
         st.sidebar.markdown("---")
-        st.sidebar.subheader("📈 التقدم")
+        st.sidebar.subheader("📈 progress")
         st.sidebar.progress(progress)
-        st.sidebar.write(f"السؤال {env.total_questions_asked} من {env.max_questions}")
+        st.sidebar.write(f"question  {env.total_questions_asked} من {env.max_questions}")
         
         # Real-time metrics
         if env.question_history:
             correct = sum(1 for q in env.question_history if q['is_correct'])
             accuracy = correct / len(env.question_history)
             
-            st.sidebar.metric("الدقة الحالية", f"{accuracy:.1%}")
-            st.sidebar.metric("القدرة المقدرة", f"{env.student_ability:.1%}")
-            st.sidebar.metric("مستوى الثقة", f"{env.confidence_score:.1%}")
+            st.sidebar.metric(" accuracy", f"{accuracy:.1%}")
+            st.sidebar.metric(" student ability", f"{env.student_ability:.1%}")
+            st.sidebar.metric(" confidence score", f"{env.confidence_score:.1%}")
 
 if __name__ == "__main__":
     main()

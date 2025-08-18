@@ -497,39 +497,3 @@ class AdaptiveStrategy:
         else:
             return 'stay'
 
-
-class MultiAgentEnsemble:
-    """Ensemble of multiple agents for robust decision making"""
-    
-    def __init__(self, env):
-        self.env = env
-        self.agents = {
-            'main': RLAssessmentAgent(env, learning_rate=0.1),
-            'conservative': RLAssessmentAgent(env, learning_rate=0.05),
-            'aggressive': RLAssessmentAgent(env, learning_rate=0.2)
-        }
-        self.weights = {'main': 0.5, 'conservative': 0.3, 'aggressive': 0.2}
-    
-    def choose_action(self, state: Dict = None) -> str:
-        """Choose action using weighted ensemble"""
-        if state is None:
-            state = self.agents['main'].get_state()
-        
-        # Get recommendations from all agents
-        recommendations = {}
-        for name, agent in self.agents.items():
-            rec = agent.recommend_next_action(state)
-            recommendations[name] = rec['recommended_action']
-        
-        # Weight the recommendations
-        action_scores = defaultdict(float)
-        for name, action in recommendations.items():
-            action_scores[action] += self.weights[name]
-        
-        # Return action with highest weighted score
-        return max(action_scores, key=action_scores.get)
-    
-    def update_all_agents(self, state: Dict, action: str, reward: float, next_state: Dict):
-        """Update all agents in the ensemble"""
-        for agent in self.agents.values():
-            agent.update_q_table(state, action, reward, next_state)

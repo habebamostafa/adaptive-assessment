@@ -14,7 +14,7 @@ import torch
 class AdaptiveMCQGenerator:
     def __init__(self):
         """Initialize the adaptive MCQ generator"""
-        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        self.device = "cpu"
         
         # Initialize text generation pipeline for custom questions
         try:
