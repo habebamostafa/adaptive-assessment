@@ -5,3 +5,4 @@ openai
 langchain_community
 huggingface_hub
 plotly
+langchain_huggingface
