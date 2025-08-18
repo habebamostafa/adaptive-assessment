@@ -15,7 +15,7 @@ class AdaptiveAssessmentEnv:
         self.question_history = []
         self.consecutive_correct = 0
         self.consecutive_incorrect = 0
-        self.asked_questions = set()   # هنا هنسجل الأسئلة اللي اتسألت
+        self.asked_questions = set()  
 
     def get_question(self, level):
         """Get a question avoiding duplicates"""
@@ -42,17 +42,14 @@ class AdaptiveAssessmentEnv:
             self.consecutive_incorrect += 1
             self.consecutive_correct = 0
 
-        # تحديث القدرة
         level_factor = self.current_level / max(self.levels)
         if is_correct:
             self.student_ability += 0.1 * (1 + level_factor)
         else:
             self.student_ability -= 0.1 * (1 + (1 - level_factor))
 
-        # حصرها بين 0 و 1
         self.student_ability = max(0, min(1, self.student_ability))
 
-        # حفظ في التاريخ
         self.question_history.append({
             'question': question,
             'answer': answer,
