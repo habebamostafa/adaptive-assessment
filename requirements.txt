@@ -2,3 +2,4 @@ numpy>=1.21.0
 python-dateutil>=2.8.2
 langchain
 openai 
+langchain_community
