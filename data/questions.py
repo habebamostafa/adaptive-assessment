@@ -376,6 +376,24 @@ def initialize_model():
             "max_length": 200
         }
     )
+def get_fallback_question(track, level):
+    """Get consistent fallback questions"""
+    fallbacks = {
+        "ai": {
+            1: {"text": "What is ML?", "correct": "Option B"},
+            2: {"text": "What is neural network?", "correct": "Option C"},
+            3: {"text": "Explain backpropagation", "correct": "Option A"}
+        },
+    }
+    
+    fb = fallbacks.get(track, {}).get(level, {})
+    return {
+        "text": fb.get("text", f"Basic {track} question (Level {level})"),
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "correct_answer": fb.get("correct", "Option B"),
+        "track": track,
+        "level": level
+    }
 
 def validate_question_format(question_dict):
     """Validate the question structure"""
@@ -411,27 +429,20 @@ def generate_question(track, level):
     prompt = PromptTemplate.from_template(template)
     question_chain = LLMChain(llm=llm, prompt=prompt)
     
-    try:
-        response = question_chain.run(track=track, level=level)
+    response = question_chain.run(track=track, level=level)
         
         # Safer JSON parsing
-        try:
-            question_data = json.loads(response)
-            if validate_question_format(question_data):
-                return question_data
-        except json.JSONDecodeError:
-            pass
+    try:
+        question = json.loads(response)
+        return {
+                "text": question["text"],
+                "options": [str(opt) for opt in question["options"]],
+                "correct_answer": str(question["correct_answer"]),
+                "track": track,
+                "level": level
+            }
             
     except Exception as e:
-        print(f"Error generating question: {str(e)}")
-    
-    # Fallback question
-    return {
-        "text": f"What is a fundamental concept in {track}? (Level {level})",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "correct_answer": "Option B",
-        "track": track,
-        "level": level
-    }
-
+        print(f"Error parsing question: {e}")
+        return get_fallback_question(track, level)
 

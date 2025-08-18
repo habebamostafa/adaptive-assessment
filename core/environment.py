@@ -35,35 +35,22 @@ class AdaptiveAssessmentEnv:
         }
     
     def submit_answer(self, question, answer, is_correct):
-        """تحديث البيئة بناءً على الإجابة"""
-        # تحديث العدادات
-        if is_correct:
-            self.consecutive_correct += 1
-            self.consecutive_incorrect = 0
-        else:
-            self.consecutive_incorrect += 1
-            self.consecutive_correct = 0
+        """Process answer and return reward"""
+        reward = self._calculate_reward(is_correct, question['level'])
         
-        # تحديث القدرة
-        level_factor = self.current_level / max(self.levels)
-        ability_change = 0.1 * level_factor if is_correct else -0.1 * (1 - level_factor)
-        self.student_ability = max(0.1, min(0.9, self.student_ability + ability_change))
+        # Update student ability
+        self._update_ability(is_correct)
         
-        # تسجيل السؤال
+        # Track history
         self.question_history.append({
-            "question": question,
-            "answer": answer,
-            "is_correct": is_correct,
-            "level": self.current_level,
-            "ability_change": ability_change
+            'question': question,
+            'answer': answer,
+            'is_correct': is_correct,
+            'level': question['level'],
+            'student_ability_after': self.student_ability
         })
         
-        # حساب المكافأة
-        reward = self._calculate_reward(is_correct, level_factor)
-        
-        # التحقق من انتهاء الاختبار
         done = len(self.question_history) >= self.max_questions
-        
         return reward, done
     
     def _calculate_environment_reward(self, is_correct, level_factor):
@@ -110,3 +97,19 @@ class AdaptiveAssessmentEnv:
             'improvement': improvement,
             'final_ability': self.student_ability
         }
+    
+    def _calculate_reward(self, is_correct, level):
+        """Calculate dynamic reward based on answer and difficulty level"""
+        base_reward = {
+            1: 0.5,  # Easy
+            2: 1.0,   # Medium
+            3: 1.5    # Hard
+        }
+        
+        if is_correct:
+            reward = base_reward[level] * (1 + self.consecutive_correct * 0.2)
+        else:
+            penalty = -0.5 * (1 + self.consecutive_incorrect * 0.1)
+            reward = max(penalty, -1.5)  # Cap penalty
+            
+        return reward

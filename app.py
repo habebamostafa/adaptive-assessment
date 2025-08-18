@@ -119,6 +119,13 @@ elif st.session_state.quiz["initialized"] and not st.session_state.quiz.get("com
         )
         
         st.markdown(f"### {q['text']}")
+        options = q['options']
+        answer = st.radio(
+            "اختر الإجابة الصحيحة:",
+            options,
+            key=f"q{question_num}",
+            index=None
+        )
         
         # الخيارات
         answer = st.radio(
