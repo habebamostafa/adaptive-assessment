@@ -10,7 +10,7 @@ class AdaptiveAssessmentEnv:
         self.track = track
         self.questions = questions[track]
         self.levels = sorted(self.questions.keys())
-        self.current_level = self.levels[len(self.levels)//2]  # يبدأ من المستوى المتوسط
+        self.current_level = self.levels[len(self.levels)//2] 
         self.student_ability = 0.5
         self.question_history = []
         self.consecutive_correct = 0
