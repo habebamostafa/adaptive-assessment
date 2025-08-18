@@ -11,6 +11,7 @@ class RLAssessmentAgent:
         self.exploration_rate = 0.3
         self.llm = HuggingFaceHub(
             repo_id="google/flan-t5-large",
+            task="text2text-generation",
             huggingfacehub_api_token=st.secrets["huggingfacehub_token"]
         )
 
