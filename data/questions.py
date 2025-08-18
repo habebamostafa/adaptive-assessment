@@ -427,11 +427,11 @@ def generate_question(track, level):
     
     # Fallback question
     return {
-        "text": f"What is a fundamental concept in {track}? (Level {level})",
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "correct_answer": "Option B",
-        "track": track,
-        "level": level
+            "text": question_data["text"],
+            "options": [str(opt) for opt in question_data["options"]],
+            "correct_answer": str(question_data["correct_answer"]),
+            "track": track,
+            "level": level
     }
 
 
