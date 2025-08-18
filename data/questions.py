@@ -357,7 +357,7 @@
 import json
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_community.llms import HuggingFaceEndpoint
+from langchain_huggingface import HuggingFaceEndpoint
 import os
 from dotenv import load_dotenv
 import streamlit as st

@@ -1,5 +1,5 @@
 import random
-from langchain_community.llms import HuggingFaceHub
+from langchain_huggingface import HuggingFaceEndpoint
 import streamlit as st
 
 class RLAssessmentAgent:
@@ -9,10 +9,15 @@ class RLAssessmentAgent:
         self.learning_rate = 0.1
         self.discount_factor = 0.9
         self.exploration_rate = 0.3
-        self.llm = HuggingFaceHub(
+        self.llm = HuggingFaceEndpoint(
             repo_id="google/flan-t5-large",
             task="text2text-generation",
-            huggingfacehub_api_token=st.secrets["huggingfacehub_token"]
+            huggingfacehub_api_token=st.secrets["huggingfacehub_token"],
+            model_kwargs={
+            "temperature": 0.7,
+            "max_length": 200,
+            "do_sample": True
+        }
         )
 
     def choose_action(self, state=None):
