@@ -375,11 +375,9 @@ def initialize_model():
         repo_id="google/flan-t5-large",
         task="text2text-generation",
         huggingfacehub_api_token=huggingfacehub_token,
-        model_kwargs={
-            "temperature": 0.7,
-            "max_length": 200,
-            "do_sample": True
-        }
+        temperature=0.7,
+        do_sample=True,
+        max_new_tokens=200
     )
 def get_fallback_question(track, level):
     """Get consistent fallback questions"""
