@@ -8,7 +8,7 @@ from datetime import datetime
 
 # Import our enhanced modules
 from core.environment import AdaptiveAssessmentEnv
-from core.agent import RLAssessmentAgent, AdaptiveStrategy, MultiAgentEnsemble
+from core.agent import RLAssessmentAgent, AdaptiveStrategy
 from data.questions import get_adaptive_question, _question_manager, get_question_statistics
 
 # Page configuration
