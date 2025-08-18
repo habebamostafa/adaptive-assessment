@@ -556,8 +556,6 @@ def main():
             
             # Initialize agent based on type
             if agent_type == "ensemble":
-                st.session_state.agent = MultiAgentEnsemble(st.session_state.env)
-            else:
                 st.session_state.agent = RLAssessmentAgent(st.session_state.env)
             
             # Get first question
