@@ -357,7 +357,7 @@
 import json
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_community.llms import HuggingFaceHub
+from langchain_community.llms import HuggingFaceEndpoint
 import os
 from dotenv import load_dotenv
 import streamlit as st
@@ -371,14 +371,14 @@ huggingfacehub_token = st.secrets["huggingfacehub_token"]
 
 def initialize_model():
     """Initialize and return the HuggingFace model"""
-    return HuggingFaceHub(
+    return HuggingFaceEndpoint(
         repo_id="google/flan-t5-large",
         task="text2text-generation",
         huggingfacehub_api_token=huggingfacehub_token,
         model_kwargs={
             "temperature": 0.7,
             "max_length": 200,
-             "do_sample": True
+            "do_sample": True
         }
     )
 def get_fallback_question(track, level):
