@@ -357,47 +357,25 @@
 import json
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_huggingface import HuggingFaceEndpoint
+from langchain_community.llms import HuggingFaceHub
 import os
-from langchain.schema.runnable import RunnableSequence
 from dotenv import load_dotenv
 import streamlit as st
 # Load environment variables
 load_dotenv()
-if "huggingfacehub_token" not in st.secrets:
-    st.error("❌ HuggingFace Token not found in secrets!")
-    st.stop()
-
 huggingfacehub_token = st.secrets["huggingfacehub_token"]
 
 def initialize_model():
     """Initialize and return the HuggingFace model"""
-    return HuggingFaceEndpoint(
+    return HuggingFaceHub(
         repo_id="google/flan-t5-large",
         task="text2text-generation",
         huggingfacehub_api_token=huggingfacehub_token,
-        temperature=0.7,
-        do_sample=True,
-        max_new_tokens=200
+        model_kwargs={
+            "temperature": 0.7,
+            "max_length": 200
+        }
     )
-def get_fallback_question(track, level):
-    """Get consistent fallback questions"""
-    fallbacks = {
-        "ai": {
-            1: {"text": "What is ML?", "correct": "Option B"},
-            2: {"text": "What is neural network?", "correct": "Option C"},
-            3: {"text": "Explain backpropagation", "correct": "Option A"}
-        },
-    }
-    
-    fb = fallbacks.get(track, {}).get(level, {})
-    return {
-        "text": fb.get("text", f"Basic {track} question (Level {level})"),
-        "options": ["Option A", "Option B", "Option C", "Option D"],
-        "correct_answer": fb.get("correct", "Option B"),
-        "track": track,
-        "level": level
-    }
 
 def validate_question_format(question_dict):
     """Validate the question structure"""
@@ -431,24 +409,29 @@ def generate_question(track, level):
     """
     
     prompt = PromptTemplate.from_template(template)
-    question_chain = prompt | llm
+    question_chain = LLMChain(llm=llm, prompt=prompt)
     
-    response = question_chain.invoke({"track": track, "level": level})
-    if isinstance(response, str):
-            response = response.replace("'", '"')  # إصلاح علامات الاقتباس
-            response = response.strip("`")  # إزالة علامات الكود
-            
-            question = json.loads(response)    
-        # Safer JSON parsing
-            if not validate_question_format(question):
-                raise ValueError("Invalid question structure")
-                
-            return {
-                    "text": question["text"],
-                    "options": [str(opt) for opt in question["options"]],
-                    "correct_answer": str(question["correct_answer"]),
-                    "track": track,
-                    "level": level
-                }
+    try:
+        response = question_chain.run(track=track, level=level)
         
+        # Safer JSON parsing
+        try:
+            question_data = json.loads(response)
+            if validate_question_format(question_data):
+                return question_data
+        except json.JSONDecodeError:
+            pass
+            
+    except Exception as e:
+        print(f"Error generating question: {str(e)}")
+    
+    # Fallback question
+    return {
+        "text": f"What is a fundamental concept in {track}? (Level {level})",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "correct_answer": "Option B",
+        "track": track,
+        "level": level
+    }
+
 
