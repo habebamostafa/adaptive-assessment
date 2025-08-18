@@ -355,11 +355,16 @@
 # }
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
-from langchain_community.llms import OpenAI  # أو أي نموذج آخر
+from langchain_community.llms import HuggingFaceHub
+import os
+from dotenv import load_dotenv
+load_dotenv()
 
 # تهيئة النموذج
-llm = OpenAI(temperature=0.7)
-
+llm = HuggingFaceHub(
+    repo_id="google/flan-t5-large",  # نموذج مجاني
+    huggingfacehub_api_token=s.getenv("huggingfacehub_token")
+)
 template = """
 أنت معلم خبير في مجال {track}. قم بإنشاء سؤال {level} مع 4 خيارات وإجابة صحيحة واحدة.
 المستوى:
