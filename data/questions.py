@@ -369,7 +369,7 @@ def initialize_model():
     return HuggingFaceHub(
         repo_id="google/flan-t5-large",
         task="text2text-generation",
-        huggingfacehub_api_token=os.getenv("huggingfacehub_token"),
+        huggingfacehub_api_token=huggingfacehub_token,
         model_kwargs={
             "temperature": 0.7,
             "max_length": 200
