@@ -358,46 +358,53 @@ from langchain.prompts import PromptTemplate
 from langchain_community.llms import HuggingFaceHub
 import os
 from dotenv import load_dotenv
+
+# Load environment variables
 load_dotenv()
 
-# تهيئة النموذج
+# Initialize the model
 llm = HuggingFaceHub(
-    repo_id="google/flan-t5-large",  # نموذج مجاني
+    repo_id="google/flan-t5-large",  # Free Hugging Face model
     task="text2text-generation",
     huggingfacehub_api_token=os.getenv("huggingfacehub_token")
 )
-template = """
-أنت معلم خبير في مجال {track}. قم بإنشاء سؤال {level} مع 4 خيارات وإجابة صحيحة واحدة.
-المستوى:
-- 1: سهل (معلومات أساسية)
-- 2: متوسط (تطبيقات عملية)
-- 3: صعب (تحليل متقدم)
 
-أخرج النتيجة بالشكل التالي:
-{
-    "text": "نص السؤال",
-    "options": ["خيار1", "خيار2", "خيار3", "خيار4"],
-    "correct_answer": "الإجابة الصحيحة",
+# Prompt template
+template = """
+You are an expert teacher in the field of {track}. 
+Create a {level} question with 4 options and only one correct answer.
+
+Difficulty levels:
+- 1: Easy (basic knowledge)
+- 2: Medium (practical applications)
+- 3: Hard (advanced analysis)
+
+Return the output in the following JSON format:
+{{
+    "text": "Question text",
+    "options": ["Option1", "Option2", "Option3", "Option4"],
+    "correct_answer": "Correct option",
     "track": "{track}",
     "level": {level}
-}
+}}
 
-السؤال:
+Question:
 """
 
 prompt = PromptTemplate.from_template(template)
 question_chain = LLMChain(llm=llm, prompt=prompt)
 
+# Function to generate questions
 def generate_question(track, level):
     response = question_chain.run(track=track, level=level)
     try:
-        return eval(response)  # تحويل النص إلى dictionary
+        return eval(response)  # Convert string to dictionary
     except:
-        # نموذج احتياطي إذا فشل النموذج
+        # Fallback if model output fails
         return {
-            "text": f"ما هو أفضل ممارسة لـ {track} في المستوى {level}؟",
-            "options": ["خيار1", "خيار2", "خيار3", "خيار4"],
-            "correct_answer": "خيار2",
+            "text": f"What is a good practice in {track} at level {level}?",
+            "options": ["Option1", "Option2", "Option3", "Option4"],
+            "correct_answer": "Option2",
             "track": track,
             "level": level
         }
