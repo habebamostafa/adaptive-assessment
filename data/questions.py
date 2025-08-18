@@ -363,7 +363,7 @@ load_dotenv()
 # تهيئة النموذج
 llm = HuggingFaceHub(
     repo_id="google/flan-t5-large",  # نموذج مجاني
-    huggingfacehub_api_token=s.getenv("huggingfacehub_token")
+    huggingfacehub_api_token=os.getenv("huggingfacehub_token")
 )
 template = """
 أنت معلم خبير في مجال {track}. قم بإنشاء سؤال {level} مع 4 خيارات وإجابة صحيحة واحدة.
