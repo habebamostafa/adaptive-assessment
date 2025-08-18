@@ -81,7 +81,7 @@ if st.session_state.get("show_results", False):
     total = len(st.session_state.env.question_history)
     
     st.metric("الدرجة النهائية", f"{correct}/{total}")
-    st.metric("مستوى الطالب المتوقع", f"{st.session_state.env.student_ability:.2f}")
+    st.metric("مستوى الطالب المتوقع", f"{(st.session_state.env.student_ability)*100:.2f}")
     
     st.subheader("تفاصيل الإجابات:")
     for i, q in enumerate(st.session_state.env.question_history, 1):
