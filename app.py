@@ -1,93 +1,75 @@
 import streamlit as st
 from core.environment import AdaptiveAssessmentEnv
 from core.agent import RLAssessmentAgent
-from data.questions import QUESTIONS
+import json
 
-# Initialize session state
-if "env" not in st.session_state:
-    st.session_state.initialized = False
-    st.session_state.answer_confirmed = False
-    st.session_state.show_results = False
+# إعداد حالة الجلسة
+if "quiz" not in st.session_state:
+    st.session_state.quiz = {
+        "initialized": False,
+        "track": None,
+        "level": None,
+        "questions": [],
+        "current_q": None
+    }
 
-st.title("📘 Adaptive Assessment Quiz")
+st.title("🎯 نظام التقييم التكيفي الذكي")
 
-# Track selection (only show if not initialized)
-if not st.session_state.get("initialized", False):
-    track = st.selectbox(
-        "اختر التخصص:",
-        options=list(QUESTIONS.keys()),
-        format_func=lambda x: x.upper()
-    )
+# اختيار المسار
+tracks = ["Web Development", "AI", "Cyber Security", "Data Science"]
+if not st.session_state.quiz["initialized"]:
+    track = st.selectbox("اختر التخصص:", tracks)
+    level = st.slider("المستوى الأولي:", 1, 3, 2)
     
     if st.button("بدء الاختبار"):
-        st.session_state.env = AdaptiveAssessmentEnv(QUESTIONS, track)
+        st.session_state.env = AdaptiveAssessmentEnv(track)
         st.session_state.agent = RLAssessmentAgent(st.session_state.env)
-        st.session_state.question = st.session_state.env.get_question(st.session_state.env.current_level)
-        st.session_state.initialized = True
-        st.session_state.answer_confirmed = False
+        st.session_state.quiz.update({
+            "initialized": True,
+            "track": track,
+            "level": level,
+            "current_q": generate_question(track, level)
+        })
         st.rerun()
 
-# Main quiz interface
-if st.session_state.get("initialized", False) and not st.session_state.get("show_results", False):
-    if st.session_state.question:
-        q = st.session_state.question
-        st.subheader(f"Level {st.session_state.env.current_level}")
-        st.markdown(f"**{q['text']}**")
+# واجهة الاختبار
+elif st.session_state.quiz["initialized"]:
+    q = st.session_state.quiz["current_q"]
+    
+    st.subheader(f"المستوى: {st.session_state.env.current_level}")
+    st.markdown(f"### {q['text']}")
+    
+    answer = st.radio("الخيارات:", q["options"])
+    
+    if st.button("إرسال الإجابة"):
+        # معالجة الإجابة
+        is_correct = answer == q["correct_answer"]
+        reward, done = st.session_state.env.submit_answer(q, is_correct)
         
-        # Store selected answer in session state
-        if "selected_answer" not in st.session_state:
-            st.session_state.selected_answer = None
-            
-        st.session_state.selected_answer = st.radio(
-            "اختر إجابة:",
-            q["options"],
-            key=q['text']
-        )
+        # تحديث الصعوبة
+        action = st.session_state.agent.choose_action()
+        st.session_state.agent.adjust_difficulty(action)
         
-        col1, col2 = st.columns(2)
-        with col1:
-            if st.button("تأكيد الإجابة", disabled=st.session_state.answer_confirmed):
-                st.session_state.answer_confirmed = True
-                
-        if st.session_state.answer_confirmed:
-            with col2:
-                if st.button("التالي"):
-                    # Process answer
-                    reward, done = st.session_state.env.submit_answer(
-                        q, 
-                        st.session_state.selected_answer
-                    )
-                    state = st.session_state.env.current_level
-                    action = st.session_state.agent.choose_action(state)
-                    st.session_state.agent.adjust_difficulty(action)
-                    
-                    # Reset for next question
-                    st.session_state.answer_confirmed = False
-                    st.session_state.selected_answer = None
-                    
-                    if not done:
-                        st.session_state.question = st.session_state.env.get_question(
-                            st.session_state.env.current_level
-                        )
-                    else:
-                        st.session_state.show_results = True
-                    st.rerun()
+        # تسجيل السؤال
+        st.session_state.quiz["questions"].append(q)
+        
+        if not done:
+            # إنشاء سؤال جديد بناءً على المستوى الحالي
+            new_level = st.session_state.env.current_level
+            st.session_state.quiz["current_q"] = generate_question(
+                st.session_state.quiz["track"], 
+                new_level
+            )
+            st.rerun()
+        else:
+            st.session_state.quiz["completed"] = True
+            st.rerun()
 
-# Show results when assessment is complete
-if st.session_state.get("show_results", False):
-    st.success("✅ انتهى الاختبار")
-    
-    correct = sum(1 for q in st.session_state.env.question_history if q['is_correct'])
-    total = len(st.session_state.env.question_history)
-    
-    st.metric("الدرجة النهائية", f"{correct}/{total}")
-    st.metric("مستوى الطالب المتوقع", f"{(st.session_state.env.student_ability)*100:.2f}")
-    
-    st.subheader("تفاصيل الإجابات:")
-    for i, q in enumerate(st.session_state.env.question_history, 1):
-        status = "✓" if q['is_correct'] else "✗"
-        st.write(f"{i}. {status} Level {q['level']}: {q['question']['text']}")
-        st.write(f"   إجابتك: {q['answer']} (الإجابة الصحيحة: {q['question']['correct_answer']})")
+# عرض النتائج
+if st.session_state.quiz.get("completed", False):
+    st.success("✅ اكتمل الاختبار!")
+    correct = sum(q["is_correct"] for q in st.session_state.env.question_history)
+    st.write(f"النتيجة: {correct}/{len(st.session_state.env.question_history)}")
     
     if st.button("إعادة الاختبار"):
         st.session_state.clear()
