@@ -60,5 +60,5 @@ class AdaptiveAssessmentEnv:
             'level': self.current_level
         })
         
-        is_done = len(self.question_history) >= 10
+        is_done = len(self.question_history) >= 3
         return reward, is_done
