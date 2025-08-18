@@ -363,6 +363,7 @@ load_dotenv()
 # تهيئة النموذج
 llm = HuggingFaceHub(
     repo_id="google/flan-t5-large",  # نموذج مجاني
+    task="text2text-generation",
     huggingfacehub_api_token=os.getenv("huggingfacehub_token")
 )
 template = """
