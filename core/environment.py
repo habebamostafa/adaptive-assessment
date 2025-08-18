@@ -1,7 +1,6 @@
 # environment.py
 import numpy as np
 import random
-from data.questions import QUESTIONS
 import numpy as np
 import random
 
