@@ -2,7 +2,7 @@
 import numpy as np
 import random
 from typing import Dict, List, Optional, Tuple
-from questions import get_adaptive_question, generate_interview_questions, _question_manager
+from data.questions import get_adaptive_question, generate_interview_questions, _question_manager
 
 class AdaptiveAssessmentEnv:
     def __init__(self, questions=None, track: str = "web"):
