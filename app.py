@@ -191,7 +191,7 @@ def render_analytics():
             subplot_titles=("Ability Progression", "Performance by Level", 
                           "Confidence Over Time", "Question Difficulty"),
             specs=[[{"secondary_y": False}, {"secondary_y": False}],
-                   [{"secondary_y": False}, {"secondary_y": False}]]
+                   [{"secondary_y": False}, {"type": "domain"}]]
         )
         
         # Ability progression
