@@ -507,7 +507,7 @@ def main():
     st.markdown("""
     <div class="main-header">
         <h1> smart adaptive learning system </h1>
-        <p>evaluate your technical skills /p>
+        <p>evaluate your technical skills </p>
     </div>
     """, unsafe_allow_html=True)
     
