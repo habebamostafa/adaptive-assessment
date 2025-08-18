@@ -1,10 +1,10 @@
 import streamlit as st
-from adaptive_assessment.environment import AdaptiveAssessmentEnv
-from adaptive_assessment.agent import AdaptiveAgent
+from core.environment import AdaptiveAssessmentEnv
+from core.agent import RLAssessmentAgent
 
 # نبدأ environment + agent
 env = AdaptiveAssessmentEnv()
-agent = AdaptiveAgent()
+agent = RLAssessmentAgent()
 
 # نحتفظ بالـ session state (عشان الجلسة ماتروحش بين clicks)
 if "state" not in st.session_state:
