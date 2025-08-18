@@ -411,23 +411,27 @@ def generate_question(track, level):
     prompt = PromptTemplate.from_template(template)
     question_chain = LLMChain(llm=llm, prompt=prompt)
     
-
-    response = question_chain.run(track=track, level=level)
+    try:
+        response = question_chain.run(track=track, level=level)
         
         # Safer JSON parsing
-
-    question_data = json.loads(response)
-    if validate_question_format(question_data):
-
+        try:
+            question_data = json.loads(response)
+            if validate_question_format(question_data):
+                return question_data
+        except json.JSONDecodeError:
+            pass
             
-
+    except Exception as e:
+        print(f"Error generating question: {str(e)}")
+    
     # Fallback question
-        return {
-                "text": question_data["text"],
-                "options": [str(opt) for opt in question_data["options"]],
-                "correct_answer": str(question_data["correct_answer"]),
-                "track": track,
-                "level": level
-        }
+    return {
+        "text": f"What is a fundamental concept in {track}? (Level {level})",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "correct_answer": "Option B",
+        "track": track,
+        "level": level
+    }
 
 
