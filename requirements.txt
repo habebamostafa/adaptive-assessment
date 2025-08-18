@@ -3,3 +3,4 @@ python-dateutil>=2.8.2
 langchain
 openai 
 langchain_community
+huggingface_hub
