@@ -360,9 +360,10 @@ from langchain.prompts import PromptTemplate
 from langchain_community.llms import HuggingFaceHub
 import os
 from dotenv import load_dotenv
-
+import streamlit as st
 # Load environment variables
 load_dotenv()
+huggingfacehub_token = st.secrets["huggingfacehub_token"]
 
 def initialize_model():
     """Initialize and return the HuggingFace model"""
