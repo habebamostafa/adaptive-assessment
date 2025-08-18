@@ -353,6 +353,8 @@
 #         ]
 #     }
 # }
+
+import json
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_community.llms import HuggingFaceHub
@@ -362,49 +364,73 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-# Initialize the model
-llm = HuggingFaceHub(
-    repo_id="google/flan-t5-large",  # Free Hugging Face model
-    task="text2text-generation",
-    huggingfacehub_api_token=os.getenv("huggingfacehub_token")
-)
-
-# Prompt template
-template = """
-You are an expert teacher in the field of {track}. 
-Create a {level} question with 4 options and only one correct answer.
-
-Difficulty levels:
-- 1: Easy (basic knowledge)
-- 2: Medium (practical applications)
-- 3: Hard (advanced analysis)
-
-Return the output in the following JSON format:
-{{
-    "text": "Question text",
-    "options": ["Option1", "Option2", "Option3", "Option4"],
-    "correct_answer": "Correct option",
-    "track": "{track}",
-    "level": {level}
-}}
-
-Question:
-"""
-
-prompt = PromptTemplate.from_template(template)
-question_chain = LLMChain(llm=llm, prompt=prompt)
-
-# Function to generate questions
-def generate_question(track, level):
-    response = question_chain.run(track=track, level=level)
-    try:
-        return eval(response)  # Convert string to dictionary
-    except:
-        # Fallback if model output fails
-        return {
-            "text": f"What is a good practice in {track} at level {level}?",
-            "options": ["Option1", "Option2", "Option3", "Option4"],
-            "correct_answer": "Option2",
-            "track": track,
-            "level": level
+def initialize_model():
+    """Initialize and return the HuggingFace model"""
+    return HuggingFaceHub(
+        repo_id="google/flan-t5-large",
+        task="text2text-generation",
+        huggingfacehub_api_token=os.getenv("huggingfacehub_token"),
+        model_kwargs={
+            "temperature": 0.7,
+            "max_length": 200
         }
+    )
+
+def validate_question_format(question_dict):
+    """Validate the question structure"""
+    required_keys = {"text", "options", "correct_answer", "track", "level"}
+    return all(key in question_dict for key in required_keys)
+
+def generate_question(track, level):
+    """Generate adaptive question with validation"""
+    # Initialize components
+    llm = initialize_model()
+    
+    template = """
+    You are an expert teacher in the field of {track}. 
+    Create a {level} question with 4 options and only one correct answer.
+
+    Difficulty levels:
+    - 1: Easy (basic knowledge)
+    - 2: Medium (practical applications)
+    - 3: Hard (advanced analysis)
+
+    Return the output in the following JSON format:
+    {{
+        "text": "Question text",
+        "options": ["Option1", "Option2", "Option3", "Option4"],
+        "correct_answer": "Correct option",
+        "track": "{track}",
+        "level": {level}
+    }}
+
+    Question:
+    """
+    
+    prompt = PromptTemplate.from_template(template)
+    question_chain = LLMChain(llm=llm, prompt=prompt)
+    
+    try:
+        response = question_chain.run(track=track, level=level)
+        
+        # Safer JSON parsing
+        try:
+            question_data = json.loads(response)
+            if validate_question_format(question_data):
+                return question_data
+        except json.JSONDecodeError:
+            pass
+            
+    except Exception as e:
+        print(f"Error generating question: {str(e)}")
+    
+    # Fallback question
+    return {
+        "text": f"What is a fundamental concept in {track}? (Level {level})",
+        "options": ["Option A", "Option B", "Option C", "Option D"],
+        "correct_answer": "Option B",
+        "track": track,
+        "level": level
+    }
+
+
