@@ -1,4 +1,5 @@
 import random
+from langchain_community.llms import HuggingFaceHub
 
 class RLAssessmentAgent:
     def __init__(self, env):
@@ -7,7 +8,11 @@ class RLAssessmentAgent:
         self.learning_rate = 0.1
         self.discount_factor = 0.9
         self.exploration_rate = 0.3
-        
+        self.llm = HuggingFaceHub(
+            repo_id="google/flan-t5-large",
+            huggingfacehub_api_token=st.secrets["huggingfacehub_token"]
+        )
+
     def choose_action(self, state=None):
         """اختيار الإجراء بناءً على السياسة epsilon-greedy مع تحسينات"""
         current_level = self.env.current_level

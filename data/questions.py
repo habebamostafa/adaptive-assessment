@@ -363,6 +363,10 @@ from dotenv import load_dotenv
 import streamlit as st
 # Load environment variables
 load_dotenv()
+if "huggingfacehub_token" not in st.secrets:
+    st.error("❌ HuggingFace Token not found in secrets!")
+    st.stop()
+
 huggingfacehub_token = st.secrets["huggingfacehub_token"]
 
 def initialize_model():
@@ -373,7 +377,8 @@ def initialize_model():
         huggingfacehub_api_token=huggingfacehub_token,
         model_kwargs={
             "temperature": 0.7,
-            "max_length": 200
+            "max_length": 200,
+             "do_sample": True
         }
     )
 def get_fallback_question(track, level):
@@ -430,19 +435,21 @@ def generate_question(track, level):
     question_chain = LLMChain(llm=llm, prompt=prompt)
     
     response = question_chain.run(track=track, level=level)
-        
-        # Safer JSON parsing
-    try:
-        question = json.loads(response)
-        return {
-                "text": question["text"],
-                "options": [str(opt) for opt in question["options"]],
-                "correct_answer": str(question["correct_answer"]),
-                "track": track,
-                "level": level
-            }
+    if isinstance(response, str):
+            response = response.replace("'", '"')  # إصلاح علامات الاقتباس
+            response = response.strip("`")  # إزالة علامات الكود
             
-    except Exception as e:
-        print(f"Error parsing question: {e}")
-        return get_fallback_question(track, level)
+            question = json.loads(response)    
+        # Safer JSON parsing
+            if not validate_question_format(question):
+                raise ValueError("Invalid question structure")
+                
+            return {
+                    "text": question["text"],
+                    "options": [str(opt) for opt in question["options"]],
+                    "correct_answer": str(question["correct_answer"]),
+                    "track": track,
+                    "level": level
+                }
+        
 
