@@ -19,9 +19,11 @@ if "quiz" not in st.session_state:
     st.session_state.quiz = {
         "initialized": False,
         "track": None,
-        "questions": [],
         "current_q": None,
-        "completed": False
+        "waiting_for_answer": False,
+        "show_feedback": False,
+        "feedback_message": "",
+        "feedback_type": ""
     }
 
 st.title("🎯 نظام التقييم التكيفي الذكي")

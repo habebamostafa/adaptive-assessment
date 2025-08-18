@@ -35,8 +35,8 @@ class AdaptiveAssessmentEnv:
         }
     
     def submit_answer(self, question, answer, is_correct):
-        """تسجيل إجابة الطالب وتحديث الحالة"""
-        # تحديث العدادات المتتالية
+        """تحديث البيئة بناءً على الإجابة"""
+        # تحديث العدادات
         if is_correct:
             self.consecutive_correct += 1
             self.consecutive_incorrect = 0
@@ -44,36 +44,25 @@ class AdaptiveAssessmentEnv:
             self.consecutive_incorrect += 1
             self.consecutive_correct = 0
         
-        # حساب تأثير الإجابة على قدرة الطالب
+        # تحديث القدرة
         level_factor = self.current_level / max(self.levels)
+        ability_change = 0.1 * level_factor if is_correct else -0.1 * (1 - level_factor)
+        self.student_ability = max(0.1, min(0.9, self.student_ability + ability_change))
         
-        if is_correct:
-            # مكافأة أكبر للإجابة الصحيحة في مستوى أعلى
-            ability_change = 0.1 * level_factor
-        else:
-            # عقاب أقل للخطأ في مستوى أعلى (لأنه أصعب)
-            ability_change = -0.1 * (2 - level_factor)
-        
-        # تحديث قدرة الطالب مع ضمان البقاء في النطاق المحدد
-        self.student_ability = max(0.1, min(0.9, 
-                                          self.student_ability + ability_change))
-        
-        # تسجيل السؤال في التاريخ
-        question_record = {
+        # تسجيل السؤال
+        self.question_history.append({
             "question": question,
             "answer": answer,
             "is_correct": is_correct,
             "level": self.current_level,
-            "student_ability_after": self.student_ability
-        }
-        self.question_history.append(question_record)
-        self.total_questions += 1
+            "ability_change": ability_change
+        })
+        
+        # حساب المكافأة
+        reward = self._calculate_reward(is_correct, level_factor)
         
         # التحقق من انتهاء الاختبار
-        done = self.total_questions >= self.max_questions
-        
-        # حساب المكافأة للبيئة
-        reward = self._calculate_environment_reward(is_correct, level_factor)
+        done = len(self.question_history) >= self.max_questions
         
         return reward, done
     
