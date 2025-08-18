@@ -359,6 +359,7 @@ from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
 from langchain_huggingface import HuggingFaceEndpoint
 import os
+from langchain.schema.runnable import RunnableSequence
 from dotenv import load_dotenv
 import streamlit as st
 # Load environment variables
@@ -430,9 +431,9 @@ def generate_question(track, level):
     """
     
     prompt = PromptTemplate.from_template(template)
-    question_chain = LLMChain(llm=llm, prompt=prompt)
+    question_chain = prompt | llm
     
-    response = question_chain.run(track=track, level=level)
+    response = question_chain.invoke({"track": track, "level": level})
     if isinstance(response, str):
             response = response.replace("'", '"')  # إصلاح علامات الاقتباس
             response = response.strip("`")  # إزالة علامات الكود
