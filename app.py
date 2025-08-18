@@ -413,7 +413,7 @@ def render_results():
     
     st.markdown("""
     <div class="success-message">
-        <h2 style="margin: 0;">🎉 exam is done sucessfuly   !</h2>
+        <h2 style="margin: 0;">🎉 exam is done sucessfully   !</h2>
         <p style="margin: 0.5rem 0 0 0;"> your results  :</p>
     </div>
     """, unsafe_allow_html=True)
