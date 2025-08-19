@@ -272,6 +272,46 @@
             margin-bottom: 1rem;
         }
         
+        .adaptive-indicator {
+            display: flex;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        
+        .adaptive-badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        .badge-easy {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .badge-medium {
+            background-color: var(--warning);
+            color: white;
+        }
+        
+        .badge-hard {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .agent-feedback {
+            margin-top: 1rem;
+            padding: 1rem;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+            border-left: 4px solid var(--primary);
+        }
+        
         @media (max-width: 768px) {
             .nav-links {
                 display: none;
@@ -429,6 +469,14 @@
                     </div>
                 </div>
                 
+                <!-- مؤشر التكيف -->
+                <div class="adaptive-indicator">
+                    <span>استراتيجية التكيف:</span>
+                    <span class="adaptive-badge" id="adaptation-strategy">تعلم معزز</span>
+                    <span style="margin-right: auto;">ثقة النموذج:</span>
+                    <span id="model-confidence">75%</span>
+                </div>
+                
                 <div class="card question-card">
                     <h3 class="question-text" id="question-text">يتم تحميل السؤال...</h3>
                     <ul class="options-list" id="options-list">
@@ -436,7 +484,13 @@
                     </ul>
                 </div>
                 
-                <div style="display: flex; justify-content: space-between;">
+                <!-- ملاحظات الوكيل -->
+                <div class="agent-feedback" id="agent-feedback">
+                    <strong>ملاحظات النظام:</strong>
+                    <span id="feedback-text">يتم تحليل أدائك لتحديد السؤال التالي...</span>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
                     <button class="btn btn-danger" onclick="cancelAssessment()">إلغاء التقييم</button>
                     <button class="btn btn-primary" id="next-button" onclick="submitAnswer()" disabled>إرسال الإجابة</button>
                 </div>
@@ -473,6 +527,15 @@
                         <!-- سيتم ملء تحليل الأداء ديناميكياً -->
                     </div>
                     
+                    <!-- تحليل الوكيل -->
+                    <h3 style="margin: 1.5rem 0 1rem;">تحليل نظام التعلم المعزز</h3>
+                    <div class="agent-feedback">
+                        <strong>ملخص أداء الوكيل:</strong>
+                        <div id="agent-analysis">
+                            <p>يتم تحليل بيانات التقييم...</p>
+                        </div>
+                    </div>
+                    
                     <div style="text-align: center; margin-top: 2rem;">
                         <button class="btn btn-primary" onclick="showPage('home')">العودة إلى الرئيسية</button>
                         <button class="btn btn-success" onclick="viewRecommendations()">عرض التوصيات</button>
@@ -495,6 +558,7 @@
                                 <th>النتيجة</th>
                                 <th>مستوى القدرة</th>
                                 <th>المستوى الموصى به</th>
+                                <th>استراتيجية التكيف</th>
                                 <th>الإجراءات</th>
                             </tr>
                         </thead>
@@ -550,6 +614,14 @@
                         </div>
                     </div>
                 </div>
+                
+                <!-- توصيات الوكيل -->
+                <h3 style="margin: 1.5rem 0 1rem;">توصيات نظام التعلم المعزز</h3>
+                <div class="agent-feedback">
+                    <div id="rl-recommendations">
+                        <p>يتم إنشاء توصيات مخصصة بناءً على أدائك...</p>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
@@ -560,6 +632,7 @@
         let currentSession = null;
         let currentQuestion = null;
         let selectedOption = null;
+        let adaptationStrategy = "rl_based"; // استراتيجية التكيف الافتراضية
         
         // عناصر DOM
         const loginForm = document.getElementById('login-form');
@@ -572,24 +645,24 @@
             const password = document.getElementById('login-password').value;
             
             try {
-                const response = await fetch('/api/login', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ email, password })
-                });
+                // محاكاة عملية تسجيل الدخول (في تطبيق حقيقي، سيتم التواصل مع الخادم)
+                const mockUser = {
+                    id: 'user_' + Date.now(),
+                    name: 'مستخدم تجريبي',
+                    email: email,
+                    role: 'student',
+                    learningProfile: {
+                        currentAbility: 0.5,
+                        track: 'web',
+                        assessmentHistory: []
+                    }
+                };
                 
-                const data = await response.json();
+                currentUser = mockUser;
+                localStorage.setItem('currentUser', JSON.stringify(mockUser));
+                showPage('home');
+                loadUserData();
                 
-                if (response.ok) {
-                    currentUser = data.user;
-                    localStorage.setItem('token', data.token);
-                    showPage('home');
-                    loadUserData();
-                } else {
-                    alert(data.message || 'فشل تسجيل الدخول');
-                }
             } catch (error) {
                 console.error('Login error:', error);
                 alert('حدث خطأ أثناء تسجيل الدخول');
@@ -606,29 +679,24 @@
             const preferredLearningStyle = document.getElementById('register-style').value;
             
             try {
-                const response = await fetch('/api/register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({ 
-                        name, 
-                        email, 
-                        password, 
-                        role, 
-                        track, 
-                        preferredLearningStyle 
-                    })
-                });
+                // محاكاة عملية التسجيل (في تطبيق حقيقي، سيتم التواصل مع الخادم)
+                const mockUser = {
+                    id: 'user_' + Date.now(),
+                    name: name,
+                    email: email,
+                    role: role,
+                    learningProfile: {
+                        preferredLearningStyle: preferredLearningStyle,
+                        track: track,
+                        currentAbility: 0.5,
+                        assessmentHistory: []
+                    }
+                };
                 
-                const data = await response.json();
-                
-                if (response.ok) {
-                    alert('تم إنشاء الحساب بنجاح، يرجى تسجيل الدخول');
-                    showPage('login');
-                } else {
-                    alert(data.message || 'فشل إنشاء الحساب');
-                }
+                currentUser = mockUser;
+                localStorage.setItem('currentUser', JSON.stringify(mockUser));
+                alert('تم إنشاء الحساب بنجاح، يرجى تسجيل الدخول');
+                showPage('login');
             } catch (error) {
                 console.error('Registration error:', error);
                 alert('حدث خطأ أثناء إنشاء الحساب');
@@ -658,26 +726,24 @@
         // تحميل بيانات المستخدم
         async function loadUserData() {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/assessment/history/${currentUser.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                if (!currentUser) {
+                    const savedUser = localStorage.getItem('currentUser');
+                    if (savedUser) {
+                        currentUser = JSON.parse(savedUser);
                     }
-                });
+                }
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    
+                if (currentUser) {
                     // تحديث الإحصائيات
                     document.getElementById('ability-value').textContent = 
-                        `${(data.averageAbility * 100).toFixed(1)}%`;
+                        `${(currentUser.learningProfile.currentAbility * 100).toFixed(1)}%`;
                     document.getElementById('assessments-count').textContent = 
-                        data.totalAssessments;
+                        currentUser.learningProfile.assessmentHistory.length;
                     document.getElementById('accuracy-value').textContent = 
-                        data.totalAssessments > 0 ? 
-                        `${(data.averageAbility * 100).toFixed(1)}%` : '0%';
+                        currentUser.learningProfile.assessmentHistory.length > 0 ? 
+                        `${(currentUser.learningProfile.currentAbility * 100).toFixed(1)}%` : '0%';
                     document.getElementById('current-track').textContent = 
-                        getTrackName(data.preferredTrack);
+                        getTrackName(currentUser.learningProfile.track);
                 }
             } catch (error) {
                 console.error('Error loading user data:', error);
@@ -687,28 +753,173 @@
         // بدء التقييم
         async function startAssessment(track) {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/assessment/start', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ track })
-                });
+                // محاكاة بدء التقييم (في تطبيق حقيقي، سيتم التواصل مع الخادم)
+                currentSession = 'session_' + Date.now();
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    currentSession = data.sessionId;
-                    showPage('assessment');
-                    loadQuestion(data.question);
-                } else {
-                    alert('فشل بدء التقييم');
-                }
+                // تحديد استراتيجية التكيف بناءً على المسار
+                adaptationStrategy = track === 'ai' ? 'rl_advanced' : 'rl_based';
+                document.getElementById('adaptation-strategy').textContent = 
+                    adaptationStrategy === 'rl_advanced' ? 'تعلم معزز متقدم' : 'تعلم معزز';
+                
+                // الحصول على السؤال الأول
+                const firstQuestion = await getNextQuestion(0.5, 2);
+                
+                showPage('assessment');
+                loadQuestion(firstQuestion);
             } catch (error) {
                 console.error('Error starting assessment:', error);
                 alert('حدث خطأ أثناء بدء التقييم');
             }
+        }
+        
+        // محاكاة الحصول على سؤال من النظام
+        async function getNextQuestion(ability, currentLevel) {
+            // محاكاة اتصال بنظام التعلم المعزز
+            const difficulty = calculateDifficulty(ability, currentLevel);
+            const question = generateAdaptiveQuestion(difficulty, currentUser.learningProfile.track);
+            
+            // تحديث مؤشر الثقة
+            const confidence = 70 + Math.random() * 25; // ثقة بين 70% و 95%
+            document.getElementById('model-confidence').textContent = `${confidence.toFixed(0)}%`;
+            
+            return question;
+        }
+        
+        // حساب الصعوبة بناءً على القدرة والمستوى الحالي
+        function calculateDifficulty(ability, currentLevel) {
+            // خوارزمية تكيفية بسيطة
+            if (ability > 0.7) return Math.min(3, currentLevel + 1);
+            if (ability < 0.3) return Math.max(1, currentLevel - 1);
+            return currentLevel;
+        }
+        
+        // توليد سؤال تكيفي
+        function generateAdaptiveQuestion(level, track) {
+            const questions = {
+                web: {
+                    1: [
+                        {
+                            id: 'web_1_1',
+                            text: "ما هي اللغة الأساسية لإنشاء هيكل صفحات الويب؟",
+                            options: ["HTML", "Python", "Java", "C++"],
+                            correct_answer: "HTML",
+                            explanation: "HTML (لغة ترميز النص الفائق) هي اللغة الأساسية لإنشاء هيكل صفحات الويب."
+                        },
+                        {
+                            id: 'web_1_2',
+                            text: "ماذا يعني اختصار CSS؟",
+                            options: ["أوراق الأنماط المتتالية", "أنماط تصميم الكمبيوتر", 
+                                    "أنماط التصميم الإبداعية", "أنماط الألوان"],
+                            correct_answer: "أوراق الأنماط المتتالية",
+                            explanation: "CSS تعني Cascading Style Sheets وهي مسؤولة عن تنسيق وتصميم صفحات الويب."
+                        }
+                    ],
+                    2: [
+                        {
+                            id: 'web_2_1',
+                            text: "ما هو React؟",
+                            options: ["مكتبة جافاسكريبت لواجهات المستخدم", "لغة برمجة", 
+                                    "إطار عمل للخادم", "نظام قواعد بيانات"],
+                            correct_answer: "مكتبة جافاسكريبت لواجهات المستخدم",
+                            explanation: "React هي مكتبة جافاسكريبت مفتوحة المصدر لبناء واجهات المستخدم."
+                        }
+                    ],
+                    3: [
+                        {
+                            id: 'web_3_1',
+                            text: "ما هو الهدف من استخدام Webpack في تطوير الويب؟",
+                            options: ["حزم وتجميع وحدات جافاسكريبت", "إدارة قواعد البيانات",
+                                    "إنشاء أنماط التصميم", "برمجة الخادم"],
+                            correct_answer: "حزم وتجميع وحدات جافاسكريبت",
+                            explanation: "Webpack هو أداة تجميع وحدات تقوم بحزم موارد الويب مثل JavaScript والCSS."
+                        }
+                    ]
+                },
+                ai: {
+                    1: [
+                        {
+                            id: 'ai_1_1',
+                            text: "ما هي لغة البرمجة الأكثر شيوعاً في الذكاء الاصطناعي؟",
+                            options: ["Python", "C#", "Ruby", "Go"],
+                            correct_answer: "Python",
+                            explanation: "بايثون هي اللغة الأكثر شيوعاً في الذكاء الاصطناعي بسبب مكتباتها الغنية وبساطتها."
+                        }
+                    ],
+                    2: [
+                        {
+                            id: 'ai_2_1',
+                            text: "ما هو التعلم الآلي (Machine Learning)؟",
+                            options: ["تعليم الآلات التعلم من البيانات", "برمجة الروبوتات",
+                                    "إنشاء مواقع الويب", "إدارة قواعد البيانات"],
+                            correct_answer: "تعليم الآلات التعلم من البيانات",
+                            explanation: "التعلم الآلي هو مجال من مجالات الذكاء الاصطناعي يسمح للأنظمة بالتعلم من البيانات دون برمجة صريحة."
+                        }
+                    ],
+                    3: [
+                        {
+                            id: 'ai_3_1',
+                            text: "ما هي الشبكات العصبية التلافيفية (CNN)؟",
+                            options: ["نوع من الشبكات العصبية لمعالجة البيانات الشبكية مثل الصور", 
+                                    "شبكة للتعامل مع البيانات النصية فقط",
+                                    "نظام لإدارة قواعد البيانات",
+                                    "لغة برمجة للذكاء الاصطناعي"],
+                            correct_answer: "نوع من الشبكات العصبية لمعالجة البيانات الشبكية مثل الصور",
+                            explanation: "الشبكات العصبية التلافيفية متخصصة في معالجة البيانات ذات البنية الشبكية مثل الصور."
+                        }
+                    ]
+                },
+                cyber: {
+                    1: [
+                        {
+                            id: 'cyber_1_1',
+                            text: "ما هو الهجوم الإلكتروني الأكثر شيوعاً؟",
+                            options: ["التصيد (Phishing)", "حرمان الخدمة (DDoS)", 
+                                    "رجل في المنتصف (MITM)", "هجوم الصفر يوم (Zero-day)"],
+                            correct_answer: "التصيد (Phishing)",
+                            explanation: "هجمات التصيد هي الأكثر شيوعاً حيث تعتمد على خداع المستخدمين لكشف معلومات حساسة."
+                        }
+                    ],
+                    2: [
+                        {
+                            id: 'cyber_2_1',
+                            text: "ما هو جدار الحماية (Firewall)؟",
+                            options: ["نظام أمان للشبكات", "تخزين البيانات",
+                                    "برنامج لإنشاء مواقع", "لغة برمجة"],
+                            correct_answer: "نظام أمان للشبكات",
+                            explanation: "جدار الحماية هو نظام أمان يراقب ويراقب حركة مرور الشبكة بناءً على قواعد أمان محددة."
+                        }
+                    ],
+                    3: [
+                        {
+                            id: 'cyber_3_1',
+                            text: "ما هو التشفير غير المتماثل (Asymmetric Encryption)؟",
+                            options: ["نظام تشفير يستخدم زوجاً من المفاتيح: عام وخاص", 
+                                    "تشفير يستخدم مفتاحاً واحداً",
+                                    "نظام حماية من الفيروسات",
+                                    "برنامج لإخفاء البيانات"],
+                            correct_answer: "نظام تشفير يستخدم زوجاً من المفاتيح: عام وخاص",
+                            explanation: "التشفير غير المتماثل يستخدم زوجاً من المفاتيح حيث يتم التشفير بالمفتاح العام وفك التشفير بالمفتاح الخاص."
+                        }
+                    ]
+                }
+            };
+            
+            // اختيار سؤال عشوائي من المستوى والمسار المحدد
+            if (questions[track] && questions[track][level]) {
+                const trackQuestions = questions[track][level];
+                return trackQuestions[Math.floor(Math.random() * trackQuestions.length)];
+            }
+            
+            // السؤال الافتراضي إذا لم يتم العثور على أسئلة للمستوى/المسار
+            return {
+                id: 'default_question',
+                text: "ما هي لغة البرمجة الأكثر استخداماً في تطوير الويب؟",
+                options: ["JavaScript", "Python", "Java", "C++"],
+                correct_answer: "JavaScript",
+                explanation: "جافاسكريبت هي اللغة الأكثر استخداماً في تطوير الويب، خاصةً للتفاعل في المتصفح.",
+                level: level,
+                track: track
+            };
         }
         
         // تحميل السؤال
@@ -716,7 +927,17 @@
             currentQuestion = questionData;
             
             document.getElementById('question-text').textContent = questionData.text;
-            document.getElementById('difficulty-level').textContent = questionData.level;
+            
+            // تحديث مؤشر مستوى الصعوبة
+            const difficultyText = {1: "سهل", 2: "متوسط", 3: "صعب"}[questionData.level] || questionData.level;
+            document.getElementById('difficulty-level').textContent = difficultyText;
+            
+            // إضافة فئة CSS لمستوى الصعوبة
+            const difficultyElement = document.getElementById('difficulty-level');
+            difficultyElement.className = '';
+            if (questionData.level === 1) difficultyElement.classList.add('badge-easy');
+            else if (questionData.level === 2) difficultyElement.classList.add('badge-medium');
+            else if (questionData.level === 3) difficultyElement.classList.add('badge-hard');
             
             const optionsList = document.getElementById('options-list');
             optionsList.innerHTML = '';
@@ -730,14 +951,29 @@
             });
             
             // تحديث شريط التقدم
-            const progress = (currentQuestion.number / currentQuestion.total) * 100;
+            const progress = (currentQuestion.number / 10) * 100 || 10;
             document.getElementById('progress-fill').style.width = `${progress}%`;
-            document.getElementById('current-question').textContent = currentQuestion.number;
-            document.getElementById('total-questions').textContent = currentQuestion.total;
+            document.getElementById('current-question').textContent = currentQuestion.number || 1;
+            document.getElementById('total-questions').textContent = 10;
             
             // تعطيل زر الإرسال حتى يتم اختيار إجابة
             document.getElementById('next-button').disabled = true;
             selectedOption = null;
+            
+            // تحديث ملاحظات الوكيل
+            updateAgentFeedback(questionData.level);
+        }
+        
+        // تحديث ملاحظات نظام التعلم المعزز
+        function updateAgentFeedback(level) {
+            const feedbackElement = document.getElementById('feedback-text');
+            const feedbacks = {
+                1: "هذا السؤال مناسب للمبتدئين. سيساعدنا في تقييم أساسياتك.",
+                2: "هذا سؤال متوسط المستوى. سنقيم فهمك للمفاهيم المتوسطة.",
+                3: "هذا سؤال متقدم. صمم لتحدي فهمك العميق للموضوع."
+            };
+            
+            feedbackElement.textContent = feedbacks[level] || "يتم تحليل أدائك لتحديد السؤال المناسب التالي.";
         }
         
         // اختيار إجابة
@@ -760,38 +996,57 @@
             if (selectedOption === null) return;
             
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('/api/assessment/answer', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        sessionId: currentSession,
-                        questionId: currentQuestion.id,
-                        selectedAnswer: selectedOption,
-                        questionData: currentQuestion
-                    })
-                });
+                const selectedAnswer = currentQuestion.options[selectedOption];
+                const isCorrect = selectedAnswer === currentQuestion.correct_answer;
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    
-                    if (data.done) {
-                        // انتهاء التقييم
-                        showResults(data.summary);
-                    } else {
-                        // تحميل السؤال التالي
-                        loadQuestion(data.nextQuestion);
-                    }
-                } else {
-                    alert('فشل إرسال الإجابة');
+                // تحديث قدرة الطالب بناءً على الإجابة
+                const abilityChange = isCorrect ? 0.05 : -0.05;
+                currentUser.learningProfile.currentAbility = Math.max(0.1, Math.min(0.99, 
+                    currentUser.learningProfile.currentAbility + abilityChange));
+                
+                // حفظ التقييم في السجل
+                if (!currentUser.learningProfile.assessmentHistory) {
+                    currentUser.learningProfile.assessmentHistory = [];
                 }
+                
+                // محاكاة الحصول على السؤال التالي
+                const nextLevel = calculateDifficulty(currentUser.learningProfile.currentAbility, currentQuestion.level);
+                const nextQuestion = await getNextQuestion(currentUser.learningProfile.currentAbility, nextLevel);
+                nextQuestion.number = (currentQuestion.number || 1) + 1;
+                
+                if (nextQuestion.number > 10) {
+                    // انتهاء التقييم بعد 10 أسئلة
+                    completeAssessment();
+                } else {
+                    // تحميل السؤال التالي
+                    loadQuestion(nextQuestion);
+                }
+                
             } catch (error) {
                 console.error('Error submitting answer:', error);
                 alert('حدث خطأ أثناء إرسال الإجابة');
             }
+        }
+        
+        // إكمال التقييم وعرض النتائج
+        function completeAssessment() {
+            // حفظ جلسة التقييم
+            const assessmentResult = {
+                sessionId: currentSession,
+                track: currentUser.learningProfile.track,
+                date: new Date(),
+                totalQuestions: 10,
+                correctAnswers: Math.round(currentUser.learningProfile.currentAbility * 10),
+                finalAbility: currentUser.learningProfile.currentAbility,
+                confidenceScore: 0.8,
+                recommendedLevel: Math.ceil(currentUser.learningProfile.currentAbility * 3)
+            };
+            
+            currentUser.learningProfile.assessmentHistory.push(assessmentResult);
+            localStorage.setItem('currentUser', JSON.stringify(currentUser));
+            
+            // عرض النتائج
+            showResults(assessmentResult);
         }
         
         // إلغاء التقييم
@@ -815,18 +1070,28 @@
             const levelPerformance = document.getElementById('level-performance');
             levelPerformance.innerHTML = '';
             
-            if (summary.levelPerformance) {
-                for (const [level, performance] of Object.entries(summary.levelPerformance)) {
-                    const div = document.createElement('div');
-                    div.className = 'recommendation-card';
-                    div.innerHTML = `
-                        <h4>المستوى ${level}</h4>
-                        <p>الدقة: ${(performance.accuracy * 100).toFixed(1)}%</p>
-                        <p>متوسط الوقت: ${performance.avgTime}s</p>
-                    `;
-                    levelPerformance.appendChild(div);
-                }
+            for (let level = 1; level <= 3; level++) {
+                const questionsInLevel = Math.round(10 / 3);
+                const correctInLevel = Math.round(summary.correctAnswers / 3);
+                
+                const div = document.createElement('div');
+                div.className = 'recommendation-card';
+                div.innerHTML = `
+                    <h4>المستوى ${level}</h4>
+                    <p>الدقة: ${(correctInLevel / questionsInLevel * 100).toFixed(1)}%</p>
+                    <p>عدد الأسئلة: ${questionsInLevel}</p>
+                `;
+                levelPerformance.appendChild(div);
             }
+            
+            // عرض تحليل الوكيل
+            const agentAnalysis = document.getElementById('agent-analysis');
+            agentAnalysis.innerHTML = `
+                <p>استخدم النظام استراتيجية <strong>${adaptationStrategy === 'rl_advanced' ? 'تعلم معزز متقدم' : 'تعلم معزز'}</strong></p>
+                <p>تم تعديل صعوبة الأسئلة بناءً على أدائك في الوقت الحقيقي.</p>
+                <p>مستوى القدرة النهائي: <strong>${(summary.finalAbility * 100).toFixed(1)}%</strong></p>
+                <p>نوصي بالبدء بالمستوى <strong>${summary.recommendedLevel}</strong> في التقييم القادم.</p>
+            `;
             
             showPage('results');
         }
@@ -834,40 +1099,39 @@
         // تحميل سجل التقييمات
         async function loadAssessmentHistory() {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/assessment/history/${currentUser.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                if (!currentUser) {
+                    const savedUser = localStorage.getItem('currentUser');
+                    if (savedUser) {
+                        currentUser = JSON.parse(savedUser);
                     }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    const tbody = document.getElementById('history-table-body');
-                    tbody.innerHTML = '';
-                    
-                    if (data.assessmentHistory.length === 0) {
-                        document.getElementById('no-history').style.display = 'block';
-                        return;
-                    }
-                    
-                    document.getElementById('no-history').style.display = 'none';
-                    
-                    data.assessmentHistory.forEach(assessment => {
-                        const tr = document.createElement('tr');
-                        tr.innerHTML = `
-                            <td>${new Date(assessment.date).toLocaleDateString('ar-EG')}</td>
-                            <td>${getTrackName(assessment.track)}</td>
-                            <td>${assessment.score} (${assessment.accuracy})</td>
-                            <td>${assessment.finalAbility}</td>
-                            <td>${assessment.recommendedLevel}</td>
-                            <td>
-                                <button class="btn btn-primary" onclick="viewAssessmentDetails('${assessment.sessionId}')">التفاصيل</button>
-                            </td>
-                        `;
-                        tbody.appendChild(tr);
-                    });
                 }
+                
+                const tbody = document.getElementById('history-table-body');
+                tbody.innerHTML = '';
+                
+                if (!currentUser || !currentUser.learningProfile.assessmentHistory || 
+                    currentUser.learningProfile.assessmentHistory.length === 0) {
+                    document.getElementById('no-history').style.display = 'block';
+                    return;
+                }
+                
+                document.getElementById('no-history').style.display = 'none';
+                
+                currentUser.learningProfile.assessmentHistory.forEach(assessment => {
+                    const tr = document.createElement('tr');
+                    tr.innerHTML = `
+                        <td>${new Date(assessment.date).toLocaleDateString('ar-EG')}</td>
+                        <td>${getTrackName(assessment.track)}</td>
+                        <td>${assessment.correctAnswers}/${assessment.totalQuestions}</td>
+                        <td>${(assessment.finalAbility * 100).toFixed(1)}%</td>
+                        <td>${assessment.recommendedLevel}</td>
+                        <td>${assessment.track === 'ai' ? 'تعلم معزز متقدم' : 'تعلم معزز'}</td>
+                        <td>
+                            <button class="btn btn-primary" onclick="viewAssessmentDetails('${assessment.sessionId}')">التفاصيل</button>
+                        </td>
+                    `;
+                    tbody.appendChild(tr);
+                });
             } catch (error) {
                 console.error('Error loading assessment history:', error);
             }
@@ -876,41 +1140,40 @@
         // تحميل التوصيات
         async function loadRecommendations() {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/adaptive-recommendations/${currentUser.id}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                if (!currentUser) {
+                    const savedUser = localStorage.getItem('currentUser');
+                    if (savedUser) {
+                        currentUser = JSON.parse(savedUser);
                     }
-                });
+                }
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    
+                if (currentUser) {
                     document.getElementById('rec-ability').textContent = 
-                        `${(data.currentAbility * 100).toFixed(1)}%`;
+                        `${(currentUser.learningProfile.currentAbility * 100).toFixed(1)}%`;
                     document.getElementById('rec-difficulty').textContent = 
-                        data.recommendedDifficulty;
+                        Math.ceil(currentUser.learningProfile.currentAbility * 3);
                     document.getElementById('rec-time').textContent = 
-                        `${data.estimatedTimeToMastery} ساعة`;
+                        `${Math.round((1 - currentUser.learningProfile.currentAbility) * 20)} ساعة`;
                     
                     // عرض الدروس الموصى بها
                     const lessonsContainer = document.getElementById('recommended-lessons');
                     lessonsContainer.innerHTML = '';
                     
-                    if (data.recommendedLessons && data.recommendedLessons.length > 0) {
-                        data.recommendedLessons.forEach(lesson => {
-                            const div = document.createElement('div');
-                            div.className = 'recommendation-card';
-                            div.innerHTML = `
-                                <h4>${lesson.title}</h4>
-                                <p>${lesson.description}</p>
-                                <p>المستوى: ${lesson.level} | الوقت المتوقع: ${lesson.duration} دقيقة</p>
-                            `;
-                            lessonsContainer.appendChild(div);
-                        });
-                    } else {
-                        lessonsContainer.innerHTML = '<p>لا توجد دروس موصى بها حالياً.</p>';
-                    }
+                    const recommendedLessons = generateRecommendedLessons(
+                        currentUser.learningProfile.track, 
+                        currentUser.learningProfile.currentAbility
+                    );
+                    
+                    recommendedLessons.forEach(lesson => {
+                        const div = document.createElement('div');
+                        div.className = 'recommendation-card';
+                        div.innerHTML = `
+                            <h4>${lesson.title}</h4>
+                            <p>${lesson.description}</p>
+                            <p>المستوى: ${lesson.level} | الوقت المتوقع: ${lesson.duration} دقيقة</p>
+                        `;
+                        lessonsContainer.appendChild(div);
+                    });
                     
                     // عرض نقاط القوة والضعف
                     const strengthsList = document.getElementById('strengths-list');
@@ -918,44 +1181,148 @@
                     strengthsList.innerHTML = '';
                     weaknessesList.innerHTML = '';
                     
-                    if (data.strengths && data.strengths.length > 0) {
-                        data.strengths.forEach(strength => {
-                            const p = document.createElement('p');
-                            p.textContent = strength;
-                            strengthsList.appendChild(p);
-                        });
-                    } else {
-                        strengthsList.innerHTML = '<p>لا توجد نقاط قوة مسجلة.</p>';
-                    }
+                    const { strengths, weaknesses } = generateStrengthsAndWeaknesses(
+                        currentUser.learningProfile.track, 
+                        currentUser.learningProfile.currentAbility
+                    );
                     
-                    if (data.weaknesses && data.weaknesses.length > 0) {
-                        data.weaknesses.forEach(weakness => {
-                            const p = document.createElement('p');
-                            p.textContent = weakness;
-                            weaknessesList.appendChild(p);
-                        });
-                    } else {
-                        weaknessesList.innerHTML = '<p>لا توجد نقاط ضعف مسجلة.</p>';
-                    }
+                    strengths.forEach(strength => {
+                        const p = document.createElement('p');
+                        p.textContent = strength;
+                        strengthsList.appendChild(p);
+                    });
+                    
+                    weaknesses.forEach(weakness => {
+                        const p = document.createElement('p');
+                        p.textContent = weakness;
+                        weaknessesList.appendChild(p);
+                    });
+                    
+                    // عرض توصيات التعلم المعزز
+                    const rlRecommendations = document.getElementById('rl-recommendations');
+                    rlRecommendations.innerHTML = `
+                        <p>بناءً على أدائك، يقترح نظام التعلم المعزز:</p>
+                        <ul>
+                            <li>التركيز على ${weaknesses[0] || 'المفاهيم المتوسطة'}</li>
+                            <li>ممارسة ${Math.round((1 - currentUser.learningProfile.currentAbility) * 10)} تمارين إضافية</li>
+                            <li>البدء بالمستوى ${Math.ceil(currentUser.learningProfile.currentAbility * 3)} في التقييم القادم</li>
+                        </ul>
+                    `;
                 }
             } catch (error) {
                 console.error('Error loading recommendations:', error);
             }
         }
         
+        // توليد الدروس الموصى بها
+        function generateRecommendedLessons(track, ability) {
+            const lessons = {
+                web: [
+                    { title: "أساسيات HTML", description: "تعلم هيكلة صفحات الويب", level: 1, duration: 30 },
+                    { title: "تنسيق الصفحات باستخدام CSS", description: "أساسيات التصميم والتنسيق", level: 1, duration: 45 },
+                    { title: "البرمجة بلغة JavaScript", description: "أساسيات البرمجة بلغة JavaScript", level: 2, duration: 60 },
+                    { title: "إطارات عمل JavaScript", description: "تعلم React و Vue", level: 3, duration: 90 },
+                    { title: "برمجة الخادم باستخدام Node.js", description: "بناء تطبيقات الخادم", level: 3, duration: 120 }
+                ],
+                ai: [
+                    { title: "مدخل إلى الذكاء الاصطناعي", description: "المفاهيم الأساسية للذكاء الاصطناعي", level: 1, duration: 40 },
+                    { title: "أساسيات بايثون للذكاء الاصطناعي", description: "تعلم بايثون للتطبيقات الذكية", level: 1, duration: 50 },
+                    { title: "التعلم الآلي الأساسي", description: "مقدمة في خوارزميات التعلم الآلي", level: 2, duration: 70 },
+                    { title: "الشبكات العصبية", description: "مقدمة في الشبكات العصبية الاصطناعية", level: 3, duration: 100 },
+                    { title: "التعلم العميق", description: "الغوص في عالم التعلم العميق", level: 3, duration: 120 }
+                ],
+                cyber: [
+                    { title: "أساسيات الأمن السيبراني", description: "مقدمة في مفاهيم الأمن السيبراني", level: 1, duration: 35 },
+                    { title: "أمن الشبكات", description: "حماية الشبكات من الاختراقات", level: 2, duration: 55 },
+                    { title: "أخلاقيات الاختراق", description: "اختبار الاختراق الأخلاقي", level: 2, duration: 65 },
+                    { title: "التشفير وأمن البيانات", description: "حماية البيانات through التشفير", level: 3, duration: 85 },
+                    { title: "الدفاع المتقدم ضد التهديدات", description: "استراتيجيات متقدمة للحماية", level: 3, duration: 110 }
+                ]
+            };
+            
+            // ترشيح الدروس بناءً على مستوى القدرة
+            const recommendedLevel = Math.ceil(ability * 3);
+            return lessons[track].filter(lesson => lesson.level === recommendedLevel).slice(0, 3);
+        }
+        
+        // توليد نقاط القوة والضعف
+        function generateStrengthsAndWeaknesses(track, ability) {
+            const allStrengths = {
+                web: [
+                    "فهم جيد لهيكلة HTML",
+                    "مهارات جيدة في تنسيق CSS",
+                    "قدرة على استخدام JavaScript للتفاعل",
+                    "فهم أساسيات React",
+                    "معرفة جيدة بتطوير الخادم"
+                ],
+                ai: [
+                    "فهم أساسيات الذكاء الاصطناعي",
+                    "مهارات جيدة في بايثون",
+                    "قدرة على تطبيق خوارزميات التعلم الآلي",
+                    "فهم الشبكات العصبية",
+                    "خبرة في التعلم العميق"
+                ],
+                cyber: [
+                    "فهم أساسيات الأمن السيبراني",
+                    "معرفة جيدة بأمن الشبكات",
+                    "مهارات في الاختراق الأخلاقي",
+                    "خبرة في تشفير البيانات",
+                    "قدرة على مواجهة التهديدات المتقدمة"
+                ]
+            };
+            
+            const allWeaknesses = {
+                web: [
+                    "تحتاج إلى تحسين في HTML المتقدم",
+                    "CSS المتقدم يحتاج إلى تدريب",
+                    "JavaScript المتقدم يحتاج إلى ممارسة",
+                    "تحتاج إلى تعلم إطارات عمل إضافية",
+                    "برمجة الخادم تحتاج إلى تعمق"
+                ],
+                ai: [
+                    "تحتاج إلى تعمق في نظريات الذكاء الاصطناعي",
+                    "بايثون المتقدم يحتاج إلى تحسين",
+                    "خوارزميات التعلم الآلي المعقدة تحتاج إلى فهم أفضل",
+                    "الشبكات العصبية المتقدمة تحتاج إلى دراسة",
+                    "التعلم العميق يحتاج إلى ممارسة إضافية"
+                ],
+                cyber: [
+                    "تحتاج إلى تعمق في نظريات الأمن",
+                    "أمن الشبكات المتقدم يحتاج إلى دراسة",
+                    "الاختراق الأخلاقي المتقدم يحتاج إلى تدريب",
+                    "تشفير البيانات المتقدم يحتاج إلى فهم أعمق",
+                    "التهديدات المتقدمة تحتاج إلى استراتيجيات أفضل"
+                ]
+            };
+            
+            // تحديد عدد نقاط القوة والضعف بناءً على مستوى القدرة
+            const strengthCount = Math.max(1, Math.floor(ability * 3));
+            const weaknessCount = Math.max(1, Math.floor((1 - ability) * 3));
+            
+            return {
+                strengths: allStrengths[track].slice(0, strengthCount),
+                weaknesses: allWeaknesses[track].slice(0, weaknessCount)
+            };
+        }
+        
         // عرض تفاصيل التقييم
         async function viewAssessmentDetails(sessionId) {
             try {
-                const token = localStorage.getItem('token');
-                const response = await fetch(`/api/assessment/analytics/${sessionId}`, {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
+                if (!currentUser) {
+                    const savedUser = localStorage.getItem('currentUser');
+                    if (savedUser) {
+                        currentUser = JSON.parse(savedUser);
                     }
-                });
+                }
                 
-                if (response.ok) {
-                    const data = await response.json();
-                    alert(`تفاصيل التقييم:\nالمسار: ${getTrackName(data.session.track)}\nمستوى القدرة: ${(data.session.studentAbility * 100).toFixed(1)}%\nمستوى الثقة: ${(data.session.confidenceScore * 100).toFixed(1)}%`);
+                if (currentUser && currentUser.learningProfile.assessmentHistory) {
+                    const assessment = currentUser.learningProfile.assessmentHistory.find(
+                        a => a.sessionId === sessionId
+                    );
+                    
+                    if (assessment) {
+                        alert(`تفاصيل التقييم:\nالمسار: ${getTrackName(assessment.track)}\nالنتيجة: ${assessment.correctAnswers}/${assessment.totalQuestions}\nمستوى القدرة: ${(assessment.finalAbility * 100).toFixed(1)}%\nالمستوى الموصى به: ${assessment.recommendedLevel}`);
+                    }
                 }
             } catch (error) {
                 console.error('Error loading assessment details:', error);
@@ -972,7 +1339,7 @@
         function logout() {
             currentUser = null;
             currentSession = null;
-            localStorage.removeItem('token');
+            localStorage.removeItem('currentUser');
             showPage('login');
         }
         
@@ -989,13 +1356,13 @@
             return tracks[trackCode] || trackCode;
         }
         
-        // التحقق من وجود token عند تحميل الصفحة
+        // التحقق من وجود مستخدم عند تحميل الصفحة
         window.addEventListener('load', () => {
-            const token = localStorage.getItem('token');
-            if (token) {
-                // محاولة جلب بيانات المستخدم باستخدام token
-                // في تطبيق حقيقي، يجب التحقق من صحة token مع الخادم
+            const savedUser = localStorage.getItem('currentUser');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
                 showPage('home');
+                loadUserData();
             } else {
                 showPage('login');
             }
@@ -1003,4 +1370,3 @@
     </script>
 </body>
 </html>
-
