@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>نظام التقييم التكيفي - التعلم المعزز</title>
+    <title>Adaptive Assessment System - Reinforcement Learning</title>
     <style>
         :root {
             --primary: #4361ee;
@@ -239,7 +239,7 @@
         .history-table th,
         .history-table td {
             padding: 0.75rem;
-            text-align: right;
+            text-align: left;
             border-bottom: 1px solid #ddd;
         }
         
@@ -327,299 +327,314 @@
     <header>
         <div class="container">
             <nav>
-                <div class="logo">نظام التقييم التكيفي</div>
+                <div class="logo">Adaptive Assessment System</div>
                 <ul class="nav-links">
-                    <li><a href="#" onclick="showPage('home')">الرئيسية</a></li>
-                    <li><a href="#" onclick="showPage('assessment')">التقييم</a></li>
-                    <li><a href="#" onclick="showPage('history')">سجل التقييمات</a></li>
-                    <li><a href="#" onclick="showPage('recommendations')">التوصيات</a></li>
-                    <li><a href="#" onclick="logout()">تسجيل الخروج</a></li>
+                    <li><a href="#" onclick="showPage('home')">Home</a></li>
+                    <li><a href="#" onclick="showPage('assessment')">Assessment</a></li>
+                    <li><a href="#" onclick="showPage('history')">History</a></li>
+                    <li><a href="#" onclick="showPage('recommendations')">Recommendations</a></li>
+                    <li><a href="#" onclick="logout()">Logout</a></li>
                 </ul>
             </nav>
         </div>
     </header>
 
     <main class="container">
-        <!-- صفحة تسجيل الدخول -->
+        <!-- Login Page -->
         <section id="login-page" class="page active-page">
             <div class="card" style="max-width: 500px; margin: 2rem auto;">
-                <h2 class="card-title">تسجيل الدخول</h2>
+                <h2 class="card-title">Login</h2>
                 <form id="login-form">
                     <div class="form-group">
-                        <label for="login-email" class="form-label">البريد الإلكتروني</label>
+                        <label for="login-email" class="form-label">Email</label>
                         <input type="email" id="login-email" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="login-password" class="form-label">كلمة المرور</label>
+                        <label for="login-password" class="form-label">Password</label>
                         <input type="password" id="login-password" class="form-control" required>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">تسجيل الدخول</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
                 </form>
                 <p style="text-align: center; margin-top: 1rem;">
-                    ليس لديك حساب؟ <a href="#" onclick="showPage('register')">إنشاء حساب</a>
+                    Don't have an account? <a href="#" onclick="showPage('register')">Register</a>
                 </p>
             </div>
         </section>
 
-        <!-- صفحة التسجيل -->
+        <!-- Registration Page -->
         <section id="register-page" class="page">
             <div class="card" style="max-width: 500px; margin: 2rem auto;">
-                <h2 class="card-title">إنشاء حساب جديد</h2>
+                <h2 class="card-title">Create New Account</h2>
                 <form id="register-form">
                     <div class="form-group">
-                        <label for="register-name" class="form-label">الاسم الكامل</label>
+                        <label for="register-name" class="form-label">Full Name</label>
                         <input type="text" id="register-name" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="register-email" class="form-label">البريد الإلكتروني</label>
+                        <label for="register-email" class="form-label">Email</label>
                         <input type="email" id="register-email" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="register-password" class="form-label">كلمة المرور</label>
+                        <label for="register-password" class="form-label">Password</label>
                         <input type="password" id="register-password" class="form-control" required>
                     </div>
                     <div class="form-group">
-                        <label for="register-role" class="form-label">الدور</label>
+                        <label for="register-role" class="form-label">Role</label>
                         <select id="register-role" class="form-select" required>
-                            <option value="student">طالب</option>
-                            <option value="teacher">معلم</option>
+                            <option value="student">Student</option>
+                            <option value="teacher">Teacher</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="register-track" class="form-label">المسار التعليمي</label>
+                        <label for="register-track" class="form-label">Learning Track</label>
                         <select id="register-track" class="form-select" required>
-                            <option value="web">تطوير الويب</option>
-                            <option value="ai">الذكاء الاصطناعي</option>
-                            <option value="cyber">الأمن السيبراني</option>
-                            <option value="data">علم البيانات</option>
-                            <option value="mobile">تطوير الموبايل</option>
+                            <option value="web">Web Development</option>
+                            <option value="ai">Artificial Intelligence</option>
+                            <option value="cyber">Cybersecurity</option>
+                            <option value="data">Data Science</option>
+                            <option value="mobile">Mobile Development</option>
                             <option value="devops">DevOps</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="register-style" class="form-label">أسلوب التعلم المفضل</label>
+                        <label for="register-style" class="form-label">Preferred Learning Style</label>
                         <select id="register-style" class="form-select" required>
-                            <option value="visual">بصري</option>
-                            <option value="auditory">سمعي</option>
-                            <option value="kinesthetic">حركي</option>
-                            <option value="reading">قراءة/كتابة</option>
+                            <option value="visual">Visual</option>
+                            <option value="auditory">Auditory</option>
+                            <option value="kinesthetic">Kinesthetic</option>
+                            <option value="reading">Reading/Writing</option>
                         </select>
                     </div>
-                    <button type="submit" class="btn btn-primary" style="width: 100%;">إنشاء حساب</button>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">Create Account</button>
                 </form>
                 <p style="text-align: center; margin-top: 1rem;">
-                    لديك حساب بالفعل؟ <a href="#" onclick="showPage('login')">تسجيل الدخول</a>
+                    Already have an account? <a href="#" onclick="showPage('login')">Login</a>
                 </p>
             </div>
         </section>
 
-        <!-- صفحة الرئيسية -->
+        <!-- Home Page -->
         <section id="home-page" class="page">
             <div class="card">
-                <h2 class="card-title">مرحباً بك في نظام التقييم التكيفي</h2>
-                <p>هذا النظام يستخدم تقنيات التعلم المعزز لتقييم مستواك وتقديم تجربة تعلم مخصصة بناءً على أدائك.</p>
+                <h2 class="card-title">Welcome to Adaptive Assessment System</h2>
+                <p>This system uses reinforcement learning techniques to assess your level and provide a personalized learning experience based on your performance.</p>
                 
                 <div class="stats-container" style="margin-top: 2rem;">
                     <div class="card stat-card">
                         <div class="stat-value" id="ability-value">0%</div>
-                        <div class="stat-label">مستوى القدرة الحالي</div>
+                        <div class="stat-label">Current Ability Level</div>
                     </div>
                     <div class="card stat-card">
                         <div class="stat-value" id="assessments-count">0</div>
-                        <div class="stat-label">عدد التقييمات المكتملة</div>
+                        <div class="stat-label">Completed Assessments</div>
                     </div>
                     <div class="card stat-card">
                         <div class="stat-value" id="accuracy-value">0%</div>
-                        <div class="stat-label">معدل الدقة</div>
+                        <div class="stat-label">Accuracy Rate</div>
                     </div>
                 </div>
                 
-                <h3 style="margin: 1.5rem 0 1rem;">مسارك الحالي: <span id="current-track">تطوير الويب</span></h3>
+                <h3 style="margin: 1.5rem 0 1rem;">Your Current Track: <span id="current-track">Web Development</span></h3>
                 
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
                     <div class="card track-card" onclick="startAssessment('web')">
                         <div class="track-icon">💻</div>
-                        <h3>تطوير الويب</h3>
+                        <h3>Web Development</h3>
                         <p>HTML, CSS, JavaScript, React, Node.js</p>
                     </div>
                     <div class="card track-card" onclick="startAssessment('ai')">
                         <div class="track-icon">🤖</div>
-                        <h3>الذكاء الاصطناعي</h3>
+                        <h3>Artificial Intelligence</h3>
                         <p>Machine Learning, Deep Learning, NLP</p>
                     </div>
                     <div class="card track-card" onclick="startAssessment('cyber')">
                         <div class="track-icon">🔒</div>
-                        <h3>الأمن السيبراني</h3>
+                        <h3>Cybersecurity</h3>
                         <p>Network Security, Cryptography, Ethical Hacking</p>
+                    </div>
+                    <div class="card track-card" onclick="startAssessment('data')">
+                        <div class="track-icon">📊</div>
+                        <h3>Data Science</h3>
+                        <p>Data Analysis, Visualization, Machine Learning</p>
+                    </div>
+                    <div class="card track-card" onclick="startAssessment('mobile')">
+                        <div class="track-icon">📱</div>
+                        <h3>Mobile Development</h3>
+                        <p>iOS, Android, React Native, Flutter</p>
+                    </div>
+                    <div class="card track-card" onclick="startAssessment('devops')">
+                        <div class="track-icon">🔄</div>
+                        <h3>DevOps</h3>
+                        <p>CI/CD, Docker, Kubernetes, Cloud</p>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- صفحة التقييم -->
+        <!-- Assessment Page -->
         <section id="assessment-page" class="page">
             <div class="assessment-container">
                 <div class="progress-container">
                     <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
-                        <span>السؤال <span id="current-question">1</span> من <span id="total-questions">10</span></span>
-                        <span>مستوى الصعوبة: <span id="difficulty-level">2</span></span>
+                        <span>Question <span id="current-question">1</span> of <span id="total-questions">10</span></span>
+                        <span>Difficulty: <span id="difficulty-level">2</span></span>
                     </div>
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill" style="width: 10%;"></div>
                     </div>
                 </div>
                 
-                <!-- مؤشر التكيف -->
+                <!-- Adaptive indicator -->
                 <div class="adaptive-indicator">
-                    <span>استراتيجية التكيف:</span>
-                    <span class="adaptive-badge" id="adaptation-strategy">تعلم معزز</span>
-                    <span style="margin-right: auto;">ثقة النموذج:</span>
+                    <span>Adaptation Strategy:</span>
+                    <span class="adaptive-badge" id="adaptation-strategy">Reinforcement Learning</span>
+                    <span style="margin-right: auto;">Model Confidence:</span>
                     <span id="model-confidence">75%</span>
                 </div>
                 
                 <div class="card question-card">
-                    <h3 class="question-text" id="question-text">يتم تحميل السؤال...</h3>
+                    <h3 class="question-text" id="question-text">Loading question...</h3>
                     <ul class="options-list" id="options-list">
-                        <!-- سيتم ملء الخيارات ديناميكياً -->
+                        <!-- Options will be populated dynamically -->
                     </ul>
                 </div>
                 
-                <!-- ملاحظات الوكيل -->
+                <!-- Agent feedback -->
                 <div class="agent-feedback" id="agent-feedback">
-                    <strong>ملاحظات النظام:</strong>
-                    <span id="feedback-text">يتم تحليل أدائك لتحديد السؤال التالي...</span>
+                    <strong>System Feedback:</strong>
+                    <span id="feedback-text">Analyzing your performance to determine next question...</span>
                 </div>
                 
                 <div style="display: flex; justify-content: space-between; margin-top: 1.5rem;">
-                    <button class="btn btn-danger" onclick="cancelAssessment()">إلغاء التقييم</button>
-                    <button class="btn btn-primary" id="next-button" onclick="submitAnswer()" disabled>إرسال الإجابة</button>
+                    <button class="btn btn-danger" onclick="cancelAssessment()">Cancel Assessment</button>
+                    <button class="btn btn-primary" id="next-button" onclick="submitAnswer()" disabled>Submit Answer</button>
                 </div>
             </div>
         </section>
 
-        <!-- صفحة نتائج التقييم -->
+        <!-- Results Page -->
         <section id="results-page" class="page">
             <div class="assessment-container">
                 <div class="card">
-                    <h2 class="card-title" style="text-align: center;">نتيجة التقييم</h2>
+                    <h2 class="card-title" style="text-align: center;">Assessment Results</h2>
                     
                     <div class="stats-container">
                         <div class="card stat-card">
                             <div class="stat-value" id="result-score">0/0</div>
-                            <div class="stat-label">الإجابات الصحيحة</div>
+                            <div class="stat-label">Correct Answers</div>
                         </div>
                         <div class="card stat-card">
                             <div class="stat-value" id="result-ability">0%</div>
-                            <div class="stat-label">مستوى القدرة النهائي</div>
+                            <div class="stat-label">Final Ability Level</div>
                         </div>
                         <div class="card stat-card">
                             <div class="stat-value" id="result-confidence">0%</div>
-                            <div class="stat-label">مستوى الثقة</div>
+                            <div class="stat-label">Confidence Level</div>
                         </div>
                         <div class="card stat-card">
                             <div class="stat-value" id="result-level">0</div>
-                            <div class="stat-label">المستوى الموصى به</div>
+                            <div class="stat-label">Recommended Level</div>
                         </div>
                     </div>
                     
-                    <h3 style="margin: 1.5rem 0 1rem;">تحليل الأداء حسب المستوى</h3>
+                    <h3 style="margin: 1.5rem 0 1rem;">Performance Analysis by Level</h3>
                     <div id="level-performance">
-                        <!-- سيتم ملء تحليل الأداء ديناميكياً -->
+                        <!-- Performance analysis will be populated dynamically -->
                     </div>
                     
-                    <!-- تحليل الوكيل -->
-                    <h3 style="margin: 1.5rem 0 1rem;">تحليل نظام التعلم المعزز</h3>
+                    <!-- Agent analysis -->
+                    <h3 style="margin: 1.5rem 0 1rem;">Reinforcement Learning System Analysis</h3>
                     <div class="agent-feedback">
-                        <strong>ملخص أداء الوكيل:</strong>
+                        <strong>Agent Performance Summary:</strong>
                         <div id="agent-analysis">
-                            <p>يتم تحليل بيانات التقييم...</p>
+                            <p>Analyzing assessment data...</p>
                         </div>
                     </div>
                     
                     <div style="text-align: center; margin-top: 2rem;">
-                        <button class="btn btn-primary" onclick="showPage('home')">العودة إلى الرئيسية</button>
-                        <button class="btn btn-success" onclick="viewRecommendations()">عرض التوصيات</button>
+                        <button class="btn btn-primary" onclick="showPage('home')">Back to Home</button>
+                        <button class="btn btn-success" onclick="viewRecommendations()">View Recommendations</button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- صفحة سجل التقييمات -->
+        <!-- History Page -->
         <section id="history-page" class="page">
             <div class="card">
-                <h2 class="card-title">سجل التقييمات</h2>
+                <h2 class="card-title">Assessment History</h2>
                 
                 <div class="table-responsive">
                     <table class="history-table">
                         <thead>
                             <tr>
-                                <th>التاريخ</th>
-                                <th>المسار</th>
-                                <th>النتيجة</th>
-                                <th>مستوى القدرة</th>
-                                <th>المستوى الموصى به</th>
-                                <th>استراتيجية التكيف</th>
-                                <th>الإجراءات</th>
+                                <th>Date</th>
+                                <th>Track</th>
+                                <th>Score</th>
+                                <th>Ability Level</th>
+                                <th>Recommended Level</th>
+                                <th>Adaptation Strategy</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody id="history-table-body">
-                            <!-- سيتم ملء سجل التقييمات ديناميكياً -->
+                            <!-- Assessment history will be populated dynamically -->
                         </tbody>
                     </table>
                 </div>
                 
                 <div id="no-history" style="text-align: center; padding: 2rem; display: none;">
-                    <p>لا توجد تقييمات سابقة.</p>
-                    <button class="btn btn-primary" onclick="showPage('assessment')">بدء التقييم الأول</button>
+                    <p>No previous assessments found.</p>
+                    <button class="btn btn-primary" onclick="showPage('assessment')">Start First Assessment</button>
                 </div>
             </div>
         </section>
 
-        <!-- صفحة التوصيات -->
+        <!-- Recommendations Page -->
         <section id="recommendations-page" class="page">
             <div class="card">
-                <h2 class="card-title">توصيات التعلم التكيفي</h2>
+                <h2 class="card-title">Adaptive Learning Recommendations</h2>
                 
                 <div class="stats-container">
                     <div class="card stat-card">
                         <div class="stat-value" id="rec-ability">0%</div>
-                        <div class="stat-label">مستوى القدرة الحالي</div>
+                        <div class="stat-label">Current Ability Level</div>
                     </div>
                     <div class="card stat-card">
                         <div class="stat-value" id="rec-difficulty">1</div>
-                        <div class="stat-label">مستوى الصعوبة الموصى به</div>
+                        <div class="stat-label">Recommended Difficulty</div>
                     </div>
                     <div class="card stat-card">
-                        <div class="stat-value" id="rec-time">0 ساعة</div>
-                        <div class="stat-label">الوقت المتوقع للإتقان</div>
+                        <div class="stat-value" id="rec-time">0 hours</div>
+                        <div class="stat-label">Estimated Time to Master</div>
                     </div>
                 </div>
                 
-                <h3 style="margin: 1.5rem 0 1rem;">الدروس الموصى بها</h3>
+                <h3 style="margin: 1.5rem 0 1rem;">Recommended Lessons</h3>
                 <div id="recommended-lessons">
-                    <!-- سيتم ملء الدروس الموصى بها ديناميكياً -->
+                    <!-- Recommended lessons will be populated dynamically -->
                 </div>
                 
                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
                     <div>
-                        <h3 style="margin-bottom: 1rem;">نقاط القوة</h3>
+                        <h3 style="margin-bottom: 1rem;">Strengths</h3>
                         <div id="strengths-list">
-                            <!-- سيتم ملء نقاط القوة ديناميكياً -->
+                            <!-- Strengths will be populated dynamically -->
                         </div>
                     </div>
                     <div>
-                        <h3 style="margin-bottom: 1rem;">نقاط الضعف</h3>
+                        <h3 style="margin-bottom: 1rem;">Weaknesses</h3>
                         <div id="weaknesses-list">
-                            <!-- سيتم ملء نقاط الضعف ديناميكياً -->
+                            <!-- Weaknesses will be populated dynamically -->
                         </div>
                     </div>
                 </div>
                 
-                <!-- توصيات الوكيل -->
-                <h3 style="margin: 1.5rem 0 1rem;">توصيات نظام التعلم المعزز</h3>
+                <!-- Agent recommendations -->
+                <h3 style="margin: 1.5rem 0 1rem;">Reinforcement Learning Recommendations</h3>
                 <div class="agent-feedback">
                     <div id="rl-recommendations">
-                        <p>يتم إنشاء توصيات مخصصة بناءً على أدائك...</p>
+                        <p>Generating personalized recommendations based on your performance...</p>
                     </div>
                 </div>
             </div>
@@ -627,28 +642,30 @@
     </main>
 
     <script>
-        // المتغيرات العامة
+        // Global variables
         let currentUser = null;
         let currentSession = null;
         let currentQuestion = null;
         let selectedOption = null;
-        let adaptationStrategy = "rl_based"; // استراتيجية التكيف الافتراضية
+        let adaptationStrategy = "rl_based";
+        let questionNumber = 1;
+        let correctAnswers = 0;
         
-        // عناصر DOM
+        // DOM elements
         const loginForm = document.getElementById('login-form');
         const registerForm = document.getElementById('register-form');
         
-        // معالجة أحداث النماذج
+        // Form event handlers
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;
             
             try {
-                // محاكاة عملية تسجيل الدخول (في تطبيق حقيقي، سيتم التواصل مع الخادم)
+                // Simulate login (in a real app, this would communicate with a server)
                 const mockUser = {
                     id: 'user_' + Date.now(),
-                    name: 'مستخدم تجريبي',
+                    name: 'Demo User',
                     email: email,
                     role: 'student',
                     learningProfile: {
@@ -665,7 +682,7 @@
                 
             } catch (error) {
                 console.error('Login error:', error);
-                alert('حدث خطأ أثناء تسجيل الدخول');
+                alert('Error during login');
             }
         });
         
@@ -679,7 +696,7 @@
             const preferredLearningStyle = document.getElementById('register-style').value;
             
             try {
-                // محاكاة عملية التسجيل (في تطبيق حقيقي، سيتم التواصل مع الخادم)
+                // Simulate registration (in a real app, this would communicate with a server)
                 const mockUser = {
                     id: 'user_' + Date.now(),
                     name: name,
@@ -695,25 +712,25 @@
                 
                 currentUser = mockUser;
                 localStorage.setItem('currentUser', JSON.stringify(mockUser));
-                alert('تم إنشاء الحساب بنجاح، يرجى تسجيل الدخول');
+                alert('Account created successfully, please login');
                 showPage('login');
             } catch (error) {
                 console.error('Registration error:', error);
-                alert('حدث خطأ أثناء إنشاء الحساب');
+                alert('Error during registration');
             }
         });
         
-        // وظائف التحكم في الصفحات
+        // Page navigation functions
         function showPage(pageId) {
-            // إخفاء جميع الصفحات
+            // Hide all pages
             document.querySelectorAll('.page').forEach(page => {
                 page.classList.remove('active-page');
             });
             
-            // إظهار الصفحة المطلوبة
+            // Show the requested page
             document.getElementById(`${pageId}-page`).classList.add('active-page');
             
-            // تحميل البيانات عند الحاجة
+            // Load data when needed
             if (pageId === 'home' && currentUser) {
                 loadUserData();
             } else if (pageId === 'history' && currentUser) {
@@ -723,7 +740,7 @@
             }
         }
         
-        // تحميل بيانات المستخدم
+        // Load user data
         async function loadUserData() {
             try {
                 if (!currentUser) {
@@ -734,7 +751,7 @@
                 }
                 
                 if (currentUser) {
-                    // تحديث الإحصائيات
+                    // Update statistics
                     document.getElementById('ability-value').textContent = 
                         `${(currentUser.learningProfile.currentAbility * 100).toFixed(1)}%`;
                     document.getElementById('assessments-count').textContent = 
@@ -750,88 +767,115 @@
             }
         }
         
-        // بدء التقييم
+        // Start assessment
         async function startAssessment(track) {
             try {
-                // محاكاة بدء التقييم (في تطبيق حقيقي، سيتم التواصل مع الخادم)
+                // Reset assessment state
+                questionNumber = 1;
+                correctAnswers = 0;
+                
+                // Simulate starting assessment
                 currentSession = 'session_' + Date.now();
                 
-                // تحديد استراتيجية التكيف بناءً على المسار
+                // Set adaptation strategy based on track
                 adaptationStrategy = track === 'ai' ? 'rl_advanced' : 'rl_based';
                 document.getElementById('adaptation-strategy').textContent = 
-                    adaptationStrategy === 'rl_advanced' ? 'تعلم معزز متقدم' : 'تعلم معزز';
+                    adaptationStrategy === 'rl_advanced' ? 'Advanced RL' : 'Reinforcement Learning';
                 
-                // الحصول على السؤال الأول
-                const firstQuestion = await getNextQuestion(0.5, 2);
+                // Get the first question
+                const firstQuestion = await getNextQuestion(currentUser.learningProfile.currentAbility, 2, track);
+                firstQuestion.number = questionNumber;
                 
                 showPage('assessment');
                 loadQuestion(firstQuestion);
             } catch (error) {
                 console.error('Error starting assessment:', error);
-                alert('حدث خطأ أثناء بدء التقييم');
+                alert('Error starting assessment');
             }
         }
         
-        // محاكاة الحصول على سؤال من النظام
-        async function getNextQuestion(ability, currentLevel) {
-            // محاكاة اتصال بنظام التعلم المعزز
+        // Simulate getting next question from the system
+        async function getNextQuestion(ability, currentLevel, track) {
+            // Simulate connection to reinforcement learning system
             const difficulty = calculateDifficulty(ability, currentLevel);
-            const question = generateAdaptiveQuestion(difficulty, currentUser.learningProfile.track);
+            const question = generateAdaptiveQuestion(difficulty, track);
             
-            // تحديث مؤشر الثقة
-            const confidence = 70 + Math.random() * 25; // ثقة بين 70% و 95%
+            // Update confidence indicator
+            const confidence = 70 + Math.random() * 25; // Confidence between 70% and 95%
             document.getElementById('model-confidence').textContent = `${confidence.toFixed(0)}%`;
             
             return question;
         }
         
-        // حساب الصعوبة بناءً على القدرة والمستوى الحالي
+        // Calculate difficulty based on ability and current level
         function calculateDifficulty(ability, currentLevel) {
-            // خوارزمية تكيفية بسيطة
+            // Simple adaptive algorithm
             if (ability > 0.7) return Math.min(3, currentLevel + 1);
             if (ability < 0.3) return Math.max(1, currentLevel - 1);
             return currentLevel;
         }
         
-        // توليد سؤال تكيفي
+        // Generate adaptive question
         function generateAdaptiveQuestion(level, track) {
+            // Enhanced question pools with more variety for each track
             const questions = {
                 web: {
                     1: [
                         {
                             id: 'web_1_1',
-                            text: "ما هي اللغة الأساسية لإنشاء هيكل صفحات الويب؟",
+                            text: "Which language is the core of web page structure?",
                             options: ["HTML", "Python", "Java", "C++"],
                             correct_answer: "HTML",
-                            explanation: "HTML (لغة ترميز النص الفائق) هي اللغة الأساسية لإنشاء هيكل صفحات الويب."
+                            explanation: "HTML (HyperText Markup Language) defines the structure and content of web pages."
                         },
                         {
                             id: 'web_1_2',
-                            text: "ماذا يعني اختصار CSS؟",
-                            options: ["أوراق الأنماط المتتالية", "أنماط تصميم الكمبيوتر", 
-                                    "أنماط التصميم الإبداعية", "أنماط الألوان"],
-                            correct_answer: "أوراق الأنماط المتتالية",
-                            explanation: "CSS تعني Cascading Style Sheets وهي مسؤولة عن تنسيق وتصميم صفحات الويب."
+                            text: "What does CSS stand for?",
+                            options: ["Computer Style Sheets", "Creative Style Sheets", 
+                                    "Cascading Style Sheets", "Colorful Style Sheets"],
+                            correct_answer: "Cascading Style Sheets",
+                            explanation: "CSS controls the visual styling and layout of web pages."
+                        },
+                        {
+                            id: 'web_1_3',
+                            text: "Which HTML tag is used for paragraphs?",
+                            options: ["<p>", "<para>", "<paragraph>", "<pg>"],
+                            correct_answer: "<p>",
+                            explanation: "The <p> tag defines a paragraph in HTML."
                         }
                     ],
                     2: [
                         {
                             id: 'web_2_1',
-                            text: "ما هو React؟",
-                            options: ["مكتبة جافاسكريبت لواجهات المستخدم", "لغة برمجة", 
-                                    "إطار عمل للخادم", "نظام قواعد بيانات"],
-                            correct_answer: "مكتبة جافاسكريبت لواجهات المستخدم",
-                            explanation: "React هي مكتبة جافاسكريبت مفتوحة المصدر لبناء واجهات المستخدم."
+                            text: "Which React hook is used for side effects?",
+                            options: ["useState", "useEffect", "useContext", "useReducer"],
+                            correct_answer: "useEffect",
+                            explanation: "useEffect handles side effects like API calls and subscriptions."
+                        },
+                        {
+                            id: 'web_2_2',
+                            text: "What does API stand for?",
+                            options: ["Application Programming Interface", "Automated Programming Interface",
+                                    "Advanced Programming Instruction", "Application Process Integration"],
+                            correct_answer: "Application Programming Interface",
+                            explanation: "APIs allow different software applications to communicate."
                         }
                     ],
                     3: [
                         {
                             id: 'web_3_1',
-                            text: "ما هو الهدف من استخدام Webpack في تطوير الويب؟",
-                            options: ["حزم وتجميع وحدات جافاسكريبت", "إدارة قواعد البيانات",
-                                    "إنشاء أنماط التصميم", "برمجة الخادم"],
-                            correct_answer: "حزم وتجميع وحدات جافاسكريبت",
-                            explanation: "Webpack هو أداة تجميع وحدات تقوم بحزم موارد الويب مثل JavaScript والCSS."
+                            text: "What is the purpose of Webpack?",
+                            options: ["Module bundling and optimization", "Database management",
+                                    "User authentication", "Email services"],
+                            correct_answer: "Module bundling and optimization",
+                            explanation: "Webpack bundles JavaScript modules and optimizes assets for production."
+                        },
+                        {
+                            id: 'web_3_2',
+                            text: "Which HTTP status code indicates 'Not Found'?",
+                            options: ["200", "301", "404", "500"],
+                            correct_answer: "404",
+                            explanation: "404 indicates that the requested resource was not found on the server."
                         }
                     ]
                 },
@@ -839,32 +883,53 @@
                     1: [
                         {
                             id: 'ai_1_1',
-                            text: "ما هي لغة البرمجة الأكثر شيوعاً في الذكاء الاصطناعي؟",
+                            text: "What is the most common programming language for AI?",
                             options: ["Python", "C#", "Ruby", "Go"],
                             correct_answer: "Python",
-                            explanation: "بايثون هي اللغة الأكثر شيوعاً في الذكاء الاصطناعي بسبب مكتباتها الغنية وبساطتها."
+                            explanation: "Python is widely used in AI due to its simplicity and extensive libraries."
+                        },
+                        {
+                            id: 'ai_1_2',
+                            text: "What does AI stand for?",
+                            options: ["Automated Intelligence", "Artificial Intelligence",
+                                    "Advanced Interface", "Algorithmic Inference"],
+                            correct_answer: "Artificial Intelligence",
+                            explanation: "AI refers to machines that can perform tasks typically requiring human intelligence."
                         }
                     ],
                     2: [
                         {
                             id: 'ai_2_1',
-                            text: "ما هو التعلم الآلي (Machine Learning)؟",
-                            options: ["تعليم الآلات التعلم من البيانات", "برمجة الروبوتات",
-                                    "إنشاء مواقع الويب", "إدارة قواعد البيانات"],
-                            correct_answer: "تعليم الآلات التعلم من البيانات",
-                            explanation: "التعلم الآلي هو مجال من مجالات الذكاء الاصطناعي يسمح للأنظمة بالتعلم من البيانات دون برمجة صريحة."
+                            text: "What is machine learning?",
+                            options: ["Teaching machines to learn from data", "Programming robots",
+                                    "Creating websites", "Database management"],
+                            correct_answer: "Teaching machines to learn from data",
+                            explanation: "Machine learning enables computers to learn and improve from experience without explicit programming."
+                        },
+                        {
+                            id: 'ai_2_2',
+                            text: "Which algorithm is best for classification tasks?",
+                            options: ["Linear Regression", "K-Means", "Decision Tree", "DBSCAN"],
+                            correct_answer: "Decision Tree",
+                            explanation: "Decision Trees are excellent for classification problems due to their interpretability."
                         }
                     ],
                     3: [
                         {
                             id: 'ai_3_1',
-                            text: "ما هي الشبكات العصبية التلافيفية (CNN)؟",
-                            options: ["نوع من الشبكات العصبية لمعالجة البيانات الشبكية مثل الصور", 
-                                    "شبكة للتعامل مع البيانات النصية فقط",
-                                    "نظام لإدارة قواعد البيانات",
-                                    "لغة برمجة للذكاء الاصطناعي"],
-                            correct_answer: "نوع من الشبكات العصبية لمعالجة البيانات الشبكية مثل الصور",
-                            explanation: "الشبكات العصبية التلافيفية متخصصة في معالجة البيانات ذات البنية الشبكية مثل الصور."
+                            text: "What does CNN stand for in deep learning?",
+                            options: ["Common Neural Network", "Convolutional Neural Network",
+                                    "Complex Neural Node", "Centralized Neural Network"],
+                            correct_answer: "Convolutional Neural Network",
+                            explanation: "CNNs are specialized for processing grid-like data such as images."
+                        },
+                        {
+                            id: 'ai_3_2',
+                            text: "What is transfer learning?",
+                            options: ["Reusing a pre-trained model for new tasks", "Moving data between servers",
+                                    "Changing programming languages", "Converting code to binary"],
+                            correct_answer: "Reusing a pre-trained model for new tasks",
+                            explanation: "Transfer learning leverages knowledge from pre-trained models for related tasks."
                         }
                     ]
                 },
@@ -872,67 +937,247 @@
                     1: [
                         {
                             id: 'cyber_1_1',
-                            text: "ما هو الهجوم الإلكتروني الأكثر شيوعاً؟",
-                            options: ["التصيد (Phishing)", "حرمان الخدمة (DDoS)", 
-                                    "رجل في المنتصف (MITM)", "هجوم الصفر يوم (Zero-day)"],
-                            correct_answer: "التصيد (Phishing)",
-                            explanation: "هجمات التصيد هي الأكثر شيوعاً حيث تعتمد على خداع المستخدمين لكشف معلومات حساسة."
+                            text: "What is the most common type of cyber attack?",
+                            options: ["Phishing", "DDoS", "MITM", "Zero-day"],
+                            correct_answer: "Phishing",
+                            explanation: "Phishing attacks trick users into revealing sensitive information through fake communications."
+                        },
+                        {
+                            id: 'cyber_1_2',
+                            text: "What is a firewall used for?",
+                            options: ["Network security", "Data storage", "Website design", "Programming"],
+                            correct_answer: "Network security",
+                            explanation: "Firewalls monitor and control incoming and outgoing network traffic."
                         }
                     ],
                     2: [
                         {
                             id: 'cyber_2_1',
-                            text: "ما هو جدار الحماية (Firewall)؟",
-                            options: ["نظام أمان للشبكات", "تخزين البيانات",
-                                    "برنامج لإنشاء مواقع", "لغة برمجة"],
-                            correct_answer: "نظام أمان للشبكات",
-                            explanation: "جدار الحماية هو نظام أمان يراقب ويراقب حركة مرور الشبكة بناءً على قواعد أمان محددة."
+                            text: "What does VPN stand for?",
+                            options: ["Virtual Private Network", "Verified Personal Node",
+                                    "Virtual Public Network", "Verified Protocol Network"],
+                            correct_answer: "Virtual Private Network",
+                            explanation: "VPNs create secure connections over public networks."
+                        },
+                        {
+                            id: 'cyber_2_2',
+                            text: "What is two-factor authentication?",
+                            options: ["An extra security layer requiring two forms of verification", "A type of virus",
+                                    "A network protocol", "A programming language"],
+                            correct_answer: "An extra security layer requiring two forms of verification",
+                            explanation: "2FA adds security by requiring something you know and something you have."
                         }
                     ],
                     3: [
                         {
                             id: 'cyber_3_1',
-                            text: "ما هو التشفير غير المتماثل (Asymmetric Encryption)؟",
-                            options: ["نظام تشفير يستخدم زوجاً من المفاتيح: عام وخاص", 
-                                    "تشفير يستخدم مفتاحاً واحداً",
-                                    "نظام حماية من الفيروسات",
-                                    "برنامج لإخفاء البيانات"],
-                            correct_answer: "نظام تشفير يستخدم زوجاً من المفاتيح: عام وخاص",
-                            explanation: "التشفير غير المتماثل يستخدم زوجاً من المفاتيح حيث يتم التشفير بالمفتاح العام وفك التشفير بالمفتاح الخاص."
+                            text: "Which encryption algorithm is asymmetric?",
+                            options: ["AES", "RSA", "DES", "3DES"],
+                            correct_answer: "RSA",
+                            explanation: "RSA uses different keys for encryption and decryption (public/private key pairs)."
+                        },
+                        {
+                            id: 'cyber_3_2',
+                            text: "What is a zero-day vulnerability?",
+                            options: ["A security flaw unknown to vendors", "A type of firewall",
+                                    "An encryption method", "A network protocol"],
+                            correct_answer: "A security flaw unknown to vendors",
+                            explanation: "Zero-day vulnerabilities are unknown to security vendors and have no available patches."
+                        }
+                    ]
+                },
+                data: {
+                    1: [
+                        {
+                            id: 'data_1_1',
+                            text: "What is the primary tool for data analysis in Python?",
+                            options: ["Pandas", "Django", "TensorFlow", "Flask"],
+                            correct_answer: "Pandas",
+                            explanation: "Pandas provides data structures and analysis tools for Python."
+                        },
+                        {
+                            id: 'data_1_2',
+                            text: "What is a DataFrame?",
+                            options: ["2D data structure", "A chart type", "A database", "A file format"],
+                            correct_answer: "2D data structure",
+                            explanation: "DataFrame is a 2D labeled data structure similar to a spreadsheet."
+                        }
+                    ],
+                    2: [
+                        {
+                            id: 'data_2_1',
+                            text: "Which type of variable is 'age'?",
+                            options: ["Categorical", "Numerical", "Ordinal", "Binary"],
+                            correct_answer: "Numerical",
+                            explanation: "Age is a numerical (quantitative) variable that can be measured."
+                        },
+                        {
+                            id: 'data_2_2',
+                            text: "What is data cleaning?",
+                            options: ["Fixing errors and inconsistencies in data", "Deleting old data",
+                                    "Encrypting data", "Visualizing data"],
+                            correct_answer: "Fixing errors and inconsistencies in data",
+                            explanation: "Data cleaning involves identifying and correcting errors in datasets."
+                        }
+                    ],
+                    3: [
+                        {
+                            id: 'data_3_1',
+                            text: "What does EDA stand for in data science?",
+                            options: ["Electronic Data Analysis", "Exploratory Data Analysis",
+                                    "Estimated Data Assessment", "Extended Data Algorithm"],
+                            correct_answer: "Exploratory Data Analysis",
+                            explanation: "EDA is the process of analyzing datasets to summarize their main characteristics."
+                        },
+                        {
+                            id: 'data_3_2',
+                            text: "What is feature engineering?",
+                            options: ["Creating better input features for models", "Building UI features",
+                                    "Designing databases", "Writing documentation"],
+                            correct_answer: "Creating better input features for models",
+                            explanation: "Feature engineering involves creating new features from existing data to improve model performance."
+                        }
+                    ]
+                },
+                mobile: {
+                    1: [
+                        {
+                            id: 'mobile_1_1',
+                            text: "Which language is used for native Android development?",
+                            options: ["Swift", "Kotlin", "C#", "JavaScript"],
+                            correct_answer: "Kotlin",
+                            explanation: "Kotlin is Google's preferred language for Android development."
+                        },
+                        {
+                            id: 'mobile_1_2',
+                            text: "What is Flutter used for?",
+                            options: ["Cross-platform mobile apps", "Web development",
+                                    "Game development", "Data analysis"],
+                            correct_answer: "Cross-platform mobile apps",
+                            explanation: "Flutter allows building apps for multiple platforms from a single codebase."
+                        }
+                    ],
+                    2: [
+                        {
+                            id: 'mobile_2_1',
+                            text: "What is React Native used for?",
+                            options: ["Cross-platform mobile development", "Web development only",
+                                    "Game development", "Data analysis"],
+                            correct_answer: "Cross-platform mobile development",
+                            explanation: "React Native uses JavaScript to build native mobile apps for multiple platforms."
+                        },
+                        {
+                            id: 'mobile_2_2',
+                            text: "What is an APK file?",
+                            options: ["Android application package", "Apple program kit",
+                                    "Application programming key", "Automated process kernel"],
+                            correct_answer: "Android application package",
+                            explanation: "APK files are the package format for Android applications."
+                        }
+                    ],
+                    3: [
+                        {
+                            id: 'mobile_3_1',
+                            text: "Which architecture pattern is recommended for Android apps?",
+                            options: ["MVVM", "Singleton", "Factory", "Observer"],
+                            correct_answer: "MVVM",
+                            explanation: "MVVM (Model-View-ViewModel) separates UI logic from business logic in Android apps."
+                        },
+                        {
+                            id: 'mobile_3_2',
+                            text: "What is Firebase commonly used for in mobile apps?",
+                            options: ["Backend services and cloud infrastructure", "UI design",
+                                    "Game engines", "Local storage only"],
+                            correct_answer: "Backend services and cloud infrastructure",
+                            explanation: "Firebase provides authentication, databases, hosting, and other backend services."
+                        }
+                    ]
+                },
+                devops: {
+                    1: [
+                        {
+                            id: 'devops_1_1',
+                            text: "What is Docker used for?",
+                            options: ["Containerization", "Database management", "Web design", "Mobile development"],
+                            correct_answer: "Containerization",
+                            explanation: "Docker packages applications and their dependencies into lightweight containers."
+                        },
+                        {
+                            id: 'devops_1_2',
+                            text: "What does CI/CD stand for?",
+                            options: ["Continuous Integration/Continuous Deployment", "Computer Integration/Computer Deployment",
+                                    "Code Integration/Code Deployment", "Continuous Internet/Continuous Data"],
+                            correct_answer: "Continuous Integration/Continuous Deployment",
+                            explanation: "CI/CD automates the process of integrating code changes and deploying applications."
+                        }
+                    ],
+                    2: [
+                        {
+                            id: 'devops_2_1',
+                            text: "What is Infrastructure as Code (IaC)?",
+                            options: ["Managing infrastructure through code", "Writing application code",
+                                    "Database programming", "Web development"],
+                            correct_answer: "Managing infrastructure through code",
+                            explanation: "IaC uses code to provision and manage infrastructure resources automatically."
+                        },
+                        {
+                            id: 'devops_2_2',
+                            text: "Which tool is commonly used for configuration management?",
+                            options: ["Ansible", "Photoshop", "Word", "Excel"],
+                            correct_answer: "Ansible",
+                            explanation: "Ansible automates configuration management and application deployment."
+                        }
+                    ],
+                    3: [
+                        {
+                            id: 'devops_3_1',
+                            text: "What is Kubernetes used for?",
+                            options: ["Container orchestration", "Database management",
+                                    "Web design", "Mobile development"],
+                            correct_answer: "Container orchestration",
+                            explanation: "Kubernetes automates deployment, scaling, and management of containerized applications."
+                        },
+                        {
+                            id: 'devops_3_2',
+                            text: "What is the difference between horizontal and vertical scaling?",
+                            options: ["Horizontal adds more machines, vertical adds more power",
+                                    "No difference", "Vertical is always better", "Horizontal is cheaper"],
+                            correct_answer: "Horizontal adds more machines, vertical adds more power",
+                            explanation: "Horizontal scaling adds more servers; vertical scaling increases the power of existing servers."
                         }
                     ]
                 }
             };
             
-            // اختيار سؤال عشوائي من المستوى والمسار المحدد
+            // Select a random question from the specified level and track
             if (questions[track] && questions[track][level]) {
                 const trackQuestions = questions[track][level];
                 return trackQuestions[Math.floor(Math.random() * trackQuestions.length)];
             }
             
-            // السؤال الافتراضي إذا لم يتم العثور على أسئلة للمستوى/المسار
+            // Default question if no questions found for the level/track
             return {
                 id: 'default_question',
-                text: "ما هي لغة البرمجة الأكثر استخداماً في تطوير الويب؟",
+                text: "What is the most commonly used programming language in web development?",
                 options: ["JavaScript", "Python", "Java", "C++"],
                 correct_answer: "JavaScript",
-                explanation: "جافاسكريبت هي اللغة الأكثر استخداماً في تطوير الويب، خاصةً للتفاعل في المتصفح.",
+                explanation: "JavaScript is the most used language in web development, especially for browser interaction.",
                 level: level,
                 track: track
             };
         }
         
-        // تحميل السؤال
+        // Load question
         function loadQuestion(questionData) {
             currentQuestion = questionData;
             
             document.getElementById('question-text').textContent = questionData.text;
             
-            // تحديث مؤشر مستوى الصعوبة
-            const difficultyText = {1: "سهل", 2: "متوسط", 3: "صعب"}[questionData.level] || questionData.level;
+            // Update difficulty indicator
+            const difficultyText = {1: "Easy", 2: "Medium", 3: "Hard"}[questionData.level] || questionData.level;
             document.getElementById('difficulty-level').textContent = difficultyText;
             
-            // إضافة فئة CSS لمستوى الصعوبة
+            // Add CSS class for difficulty level
             const difficultyElement = document.getElementById('difficulty-level');
             difficultyElement.className = '';
             if (questionData.level === 1) difficultyElement.classList.add('badge-easy');
@@ -950,48 +1195,48 @@
                 optionsList.appendChild(li);
             });
             
-            // تحديث شريط التقدم
-            const progress = (currentQuestion.number / 10) * 100 || 10;
+            // Update progress bar
+            const progress = (questionNumber / 10) * 100;
             document.getElementById('progress-fill').style.width = `${progress}%`;
-            document.getElementById('current-question').textContent = currentQuestion.number || 1;
+            document.getElementById('current-question').textContent = questionNumber;
             document.getElementById('total-questions').textContent = 10;
             
-            // تعطيل زر الإرسال حتى يتم اختيار إجابة
+            // Disable submit button until an answer is selected
             document.getElementById('next-button').disabled = true;
             selectedOption = null;
             
-            // تحديث ملاحظات الوكيل
+            // Update agent feedback
             updateAgentFeedback(questionData.level);
         }
         
-        // تحديث ملاحظات نظام التعلم المعزز
+        // Update reinforcement learning system feedback
         function updateAgentFeedback(level) {
             const feedbackElement = document.getElementById('feedback-text');
             const feedbacks = {
-                1: "هذا السؤال مناسب للمبتدئين. سيساعدنا في تقييم أساسياتك.",
-                2: "هذا سؤال متوسط المستوى. سنقيم فهمك للمفاهيم المتوسطة.",
-                3: "هذا سؤال متقدم. صمم لتحدي فهمك العميق للموضوع."
+                1: "This question is suitable for beginners. It will help us assess your fundamentals.",
+                2: "This is a medium-level question. We'll evaluate your understanding of intermediate concepts.",
+                3: "This is an advanced question. Designed to challenge your deep understanding of the topic."
             };
             
-            feedbackElement.textContent = feedbacks[level] || "يتم تحليل أدائك لتحديد السؤال المناسب التالي.";
+            feedbackElement.textContent = feedbacks[level] || "Analyzing your performance to determine the next appropriate question.";
         }
         
-        // اختيار إجابة
+        // Select answer option
         function selectOption(index, element) {
-            // إلغاء تحديد جميع الخيارات
+            // Deselect all options
             document.querySelectorAll('.option-item').forEach(item => {
                 item.classList.remove('selected');
             });
             
-            // تحديد الخيار الحالي
+            // Select current option
             element.classList.add('selected');
             selectedOption = index;
             
-            // تمكين زر الإرسال
+            // Enable submit button
             document.getElementById('next-button').disabled = false;
         }
         
-        // إرسال الإجابة
+        // Submit answer
         async function submitAnswer() {
             if (selectedOption === null) return;
             
@@ -999,44 +1244,46 @@
                 const selectedAnswer = currentQuestion.options[selectedOption];
                 const isCorrect = selectedAnswer === currentQuestion.correct_answer;
                 
-                // تحديث قدرة الطالب بناءً على الإجابة
+                if (isCorrect) {
+                    correctAnswers++;
+                }
+                
+                // Update student ability based on answer
                 const abilityChange = isCorrect ? 0.05 : -0.05;
                 currentUser.learningProfile.currentAbility = Math.max(0.1, Math.min(0.99, 
                     currentUser.learningProfile.currentAbility + abilityChange));
                 
-                // حفظ التقييم في السجل
-                if (!currentUser.learningProfile.assessmentHistory) {
-                    currentUser.learningProfile.assessmentHistory = [];
-                }
+                // Get next question
+                questionNumber++;
                 
-                // محاكاة الحصول على السؤال التالي
-                const nextLevel = calculateDifficulty(currentUser.learningProfile.currentAbility, currentQuestion.level);
-                const nextQuestion = await getNextQuestion(currentUser.learningProfile.currentAbility, nextLevel);
-                nextQuestion.number = (currentQuestion.number || 1) + 1;
-                
-                if (nextQuestion.number > 10) {
-                    // انتهاء التقييم بعد 10 أسئلة
+                if (questionNumber > 10) {
+                    // Complete assessment after 10 questions
                     completeAssessment();
                 } else {
-                    // تحميل السؤال التالي
+                    // Get next question
+                    const nextLevel = calculateDifficulty(currentUser.learningProfile.currentAbility, currentQuestion.level);
+                    const nextQuestion = await getNextQuestion(currentUser.learningProfile.currentAbility, nextLevel, currentUser.learningProfile.track);
+                    nextQuestion.number = questionNumber;
+                    
+                    // Load next question
                     loadQuestion(nextQuestion);
                 }
                 
             } catch (error) {
                 console.error('Error submitting answer:', error);
-                alert('حدث خطأ أثناء إرسال الإجابة');
+                alert('Error submitting answer');
             }
         }
         
-        // إكمال التقييم وعرض النتائج
+        // Complete assessment and show results
         function completeAssessment() {
-            // حفظ جلسة التقييم
+            // Save assessment session
             const assessmentResult = {
                 sessionId: currentSession,
                 track: currentUser.learningProfile.track,
                 date: new Date(),
                 totalQuestions: 10,
-                correctAnswers: Math.round(currentUser.learningProfile.currentAbility * 10),
+                correctAnswers: correctAnswers,
                 finalAbility: currentUser.learningProfile.currentAbility,
                 confidenceScore: 0.8,
                 recommendedLevel: Math.ceil(currentUser.learningProfile.currentAbility * 3)
@@ -1045,18 +1292,18 @@
             currentUser.learningProfile.assessmentHistory.push(assessmentResult);
             localStorage.setItem('currentUser', JSON.stringify(currentUser));
             
-            // عرض النتائج
+            // Show results
             showResults(assessmentResult);
         }
         
-        // إلغاء التقييم
+        // Cancel assessment
         function cancelAssessment() {
-            if (confirm('هل أنت متأكد من إلغاء التقييم؟ سيتم فقدان تقدمك الحالي.')) {
+            if (confirm('Are you sure you want to cancel the assessment? Your current progress will be lost.')) {
                 showPage('home');
             }
         }
         
-        // عرض النتائج
+        // Show results
         function showResults(summary) {
             document.getElementById('result-score').textContent = 
                 `${summary.correctAnswers}/${summary.totalQuestions}`;
@@ -1066,7 +1313,7 @@
                 `${(summary.confidenceScore * 100).toFixed(1)}%`;
             document.getElementById('result-level').textContent = summary.recommendedLevel;
             
-            // عرض تحليل الأداء حسب المستوى
+            // Show performance analysis by level
             const levelPerformance = document.getElementById('level-performance');
             levelPerformance.innerHTML = '';
             
@@ -1077,26 +1324,26 @@
                 const div = document.createElement('div');
                 div.className = 'recommendation-card';
                 div.innerHTML = `
-                    <h4>المستوى ${level}</h4>
-                    <p>الدقة: ${(correctInLevel / questionsInLevel * 100).toFixed(1)}%</p>
-                    <p>عدد الأسئلة: ${questionsInLevel}</p>
+                    <h4>Level ${level}</h4>
+                    <p>Accuracy: ${(correctInLevel / questionsInLevel * 100).toFixed(1)}%</p>
+                    <p>Questions: ${questionsInLevel}</p>
                 `;
                 levelPerformance.appendChild(div);
             }
             
-            // عرض تحليل الوكيل
+            // Show agent analysis
             const agentAnalysis = document.getElementById('agent-analysis');
             agentAnalysis.innerHTML = `
-                <p>استخدم النظام استراتيجية <strong>${adaptationStrategy === 'rl_advanced' ? 'تعلم معزز متقدم' : 'تعلم معزز'}</strong></p>
-                <p>تم تعديل صعوبة الأسئلة بناءً على أدائك في الوقت الحقيقي.</p>
-                <p>مستوى القدرة النهائي: <strong>${(summary.finalAbility * 100).toFixed(1)}%</strong></p>
-                <p>نوصي بالبدء بالمستوى <strong>${summary.recommendedLevel}</strong> في التقييم القادم.</p>
+                <p>The system used <strong>${adaptationStrategy === 'rl_advanced' ? 'advanced reinforcement learning' : 'reinforcement learning'}</strong> strategy</p>
+                <p>Question difficulty was adjusted in real-time based on your performance.</p>
+                <p>Final ability level: <strong>${(summary.finalAbility * 100).toFixed(1)}%</strong></p>
+                <p>We recommend starting with level <strong>${summary.recommendedLevel}</strong> in your next assessment.</p>
             `;
             
             showPage('results');
         }
         
-        // تحميل سجل التقييمات
+        // Load assessment history
         async function loadAssessmentHistory() {
             try {
                 if (!currentUser) {
@@ -1120,14 +1367,14 @@
                 currentUser.learningProfile.assessmentHistory.forEach(assessment => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${new Date(assessment.date).toLocaleDateString('ar-EG')}</td>
+                        <td>${new Date(assessment.date).toLocaleDateString()}</td>
                         <td>${getTrackName(assessment.track)}</td>
                         <td>${assessment.correctAnswers}/${assessment.totalQuestions}</td>
                         <td>${(assessment.finalAbility * 100).toFixed(1)}%</td>
                         <td>${assessment.recommendedLevel}</td>
-                        <td>${assessment.track === 'ai' ? 'تعلم معزز متقدم' : 'تعلم معزز'}</td>
+                        <td>${assessment.track === 'ai' ? 'Advanced RL' : 'Reinforcement Learning'}</td>
                         <td>
-                            <button class="btn btn-primary" onclick="viewAssessmentDetails('${assessment.sessionId}')">التفاصيل</button>
+                            <button class="btn btn-primary" onclick="viewAssessmentDetails('${assessment.sessionId}')">Details</button>
                         </td>
                     `;
                     tbody.appendChild(tr);
@@ -1137,7 +1384,7 @@
             }
         }
         
-        // تحميل التوصيات
+        // Load recommendations
         async function loadRecommendations() {
             try {
                 if (!currentUser) {
@@ -1153,9 +1400,9 @@
                     document.getElementById('rec-difficulty').textContent = 
                         Math.ceil(currentUser.learningProfile.currentAbility * 3);
                     document.getElementById('rec-time').textContent = 
-                        `${Math.round((1 - currentUser.learningProfile.currentAbility) * 20)} ساعة`;
+                        `${Math.round((1 - currentUser.learningProfile.currentAbility) * 20)} hours`;
                     
-                    // عرض الدروس الموصى بها
+                    // Show recommended lessons
                     const lessonsContainer = document.getElementById('recommended-lessons');
                     lessonsContainer.innerHTML = '';
                     
@@ -1170,12 +1417,12 @@
                         div.innerHTML = `
                             <h4>${lesson.title}</h4>
                             <p>${lesson.description}</p>
-                            <p>المستوى: ${lesson.level} | الوقت المتوقع: ${lesson.duration} دقيقة</p>
+                            <p>Level: ${lesson.level} | Estimated Time: ${lesson.duration} minutes</p>
                         `;
                         lessonsContainer.appendChild(div);
                     });
                     
-                    // عرض نقاط القوة والضعف
+                    // Show strengths and weaknesses
                     const strengthsList = document.getElementById('strengths-list');
                     const weaknessesList = document.getElementById('weaknesses-list');
                     strengthsList.innerHTML = '';
@@ -1198,14 +1445,14 @@
                         weaknessesList.appendChild(p);
                     });
                     
-                    // عرض توصيات التعلم المعزز
+                    // Show reinforcement learning recommendations
                     const rlRecommendations = document.getElementById('rl-recommendations');
                     rlRecommendations.innerHTML = `
-                        <p>بناءً على أدائك، يقترح نظام التعلم المعزز:</p>
+                        <p>Based on your performance, the reinforcement learning system suggests:</p>
                         <ul>
-                            <li>التركيز على ${weaknesses[0] || 'المفاهيم المتوسطة'}</li>
-                            <li>ممارسة ${Math.round((1 - currentUser.learningProfile.currentAbility) * 10)} تمارين إضافية</li>
-                            <li>البدء بالمستوى ${Math.ceil(currentUser.learningProfile.currentAbility * 3)} في التقييم القادم</li>
+                            <li>Focus on ${weaknesses[0] || 'intermediate concepts'}</li>
+                            <li>Practice ${Math.round((1 - currentUser.learningProfile.currentAbility) * 10)} additional exercises</li>
+                            <li>Start with level ${Math.ceil(currentUser.learningProfile.currentAbility * 3)} in your next assessment</li>
                         </ul>
                     `;
                 }
@@ -1214,88 +1461,151 @@
             }
         }
         
-        // توليد الدروس الموصى بها
+        // Generate recommended lessons
         function generateRecommendedLessons(track, ability) {
             const lessons = {
                 web: [
-                    { title: "أساسيات HTML", description: "تعلم هيكلة صفحات الويب", level: 1, duration: 30 },
-                    { title: "تنسيق الصفحات باستخدام CSS", description: "أساسيات التصميم والتنسيق", level: 1, duration: 45 },
-                    { title: "البرمجة بلغة JavaScript", description: "أساسيات البرمجة بلغة JavaScript", level: 2, duration: 60 },
-                    { title: "إطارات عمل JavaScript", description: "تعلم React و Vue", level: 3, duration: 90 },
-                    { title: "برمجة الخادم باستخدام Node.js", description: "بناء تطبيقات الخادم", level: 3, duration: 120 }
+                    { title: "HTML Basics", description: "Learn web page structure", level: 1, duration: 30 },
+                    { title: "CSS Styling", description: "Fundamentals of design and layout", level: 1, duration: 45 },
+                    { title: "JavaScript Programming", description: "JavaScript fundamentals", level: 2, duration: 60 },
+                    { title: "React Framework", description: "Learn React and component-based development", level: 3, duration: 90 },
+                    { title: "Node.js Server Programming", description: "Build server applications", level: 3, duration: 120 }
                 ],
                 ai: [
-                    { title: "مدخل إلى الذكاء الاصطناعي", description: "المفاهيم الأساسية للذكاء الاصطناعي", level: 1, duration: 40 },
-                    { title: "أساسيات بايثون للذكاء الاصطناعي", description: "تعلم بايثون للتطبيقات الذكية", level: 1, duration: 50 },
-                    { title: "التعلم الآلي الأساسي", description: "مقدمة في خوارزميات التعلم الآلي", level: 2, duration: 70 },
-                    { title: "الشبكات العصبية", description: "مقدمة في الشبكات العصبية الاصطناعية", level: 3, duration: 100 },
-                    { title: "التعلم العميق", description: "الغوص في عالم التعلم العميق", level: 3, duration: 120 }
+                    { title: "Introduction to AI", description: "Basic concepts of artificial intelligence", level: 1, duration: 40 },
+                    { title: "Python for AI", description: "Learn Python for AI applications", level: 1, duration: 50 },
+                    { title: "Machine Learning Basics", description: "Introduction to ML algorithms", level: 2, duration: 70 },
+                    { title: "Neural Networks", description: "Introduction to artificial neural networks", level: 3, duration: 100 },
+                    { title: "Deep Learning", description: "Dive into deep learning", level: 3, duration: 120 }
                 ],
                 cyber: [
-                    { title: "أساسيات الأمن السيبراني", description: "مقدمة في مفاهيم الأمن السيبراني", level: 1, duration: 35 },
-                    { title: "أمن الشبكات", description: "حماية الشبكات من الاختراقات", level: 2, duration: 55 },
-                    { title: "أخلاقيات الاختراق", description: "اختبار الاختراق الأخلاقي", level: 2, duration: 65 },
-                    { title: "التشفير وأمن البيانات", description: "حماية البيانات through التشفير", level: 3, duration: 85 },
-                    { title: "الدفاع المتقدم ضد التهديدات", description: "استراتيجيات متقدمة للحماية", level: 3, duration: 110 }
+                    { title: "Cybersecurity Fundamentals", description: "Introduction to cybersecurity concepts", level: 1, duration: 35 },
+                    { title: "Network Security", description: "Protecting networks from intrusions", level: 2, duration: 55 },
+                    { title: "Ethical Hacking", description: "Ethical penetration testing", level: 2, duration: 65 },
+                    { title: "Encryption and Data Security", description: "Protecting data through encryption", level: 3, duration: 85 },
+                    { title: "Advanced Threat Defense", description: "Advanced protection strategies", level: 3, duration: 110 }
+                ],
+                data: [
+                    { title: "Data Analysis with Pandas", description: "Learn data analysis with Pandas", level: 1, duration: 40 },
+                    { title: "Data Visualization", description: "Creating visualizations with Matplotlib", level: 1, duration: 50 },
+                    { title: "Statistical Analysis", description: "Statistical methods for data science", level: 2, duration: 70 },
+                    { title: "Machine Learning for Data Science", description: "Applying ML to data analysis", level: 3, duration: 90 },
+                    { title: "Big Data Technologies", description: "Working with large datasets", level: 3, duration: 120 }
+                ],
+                mobile: [
+                    { title: "Android Development Basics", description: "Fundamentals of Android development", level: 1, duration: 40 },
+                    { title: "iOS Development Basics", description: "Fundamentals of iOS development", level: 1, duration: 50 },
+                    { title: "Cross-Platform Development", description: "Building apps for multiple platforms", level: 2, duration: 70 },
+                    { title: "Mobile App Architecture", description: "Designing scalable mobile apps", level: 3, duration: 90 },
+                    { title: "Advanced Mobile Features", description: "Implementing advanced mobile features", level: 3, duration: 120 }
+                ],
+                devops: [
+                    { title: "Docker Containers", description: "Containerization with Docker", level: 1, duration: 40 },
+                    { title: "CI/CD Pipelines", description: "Building continuous integration pipelines", level: 1, duration: 50 },
+                    { title: "Kubernetes Orchestration", description: "Container orchestration with Kubernetes", level: 2, duration: 70 },
+                    { title: "Infrastructure as Code", description: "Managing infrastructure with code", level: 3, duration: 90 },
+                    { title: "Cloud DevOps", description: "DevOps practices in the cloud", level: 3, duration: 120 }
                 ]
             };
             
-            // ترشيح الدروس بناءً على مستوى القدرة
+            // Filter lessons based on ability level
             const recommendedLevel = Math.ceil(ability * 3);
             return lessons[track].filter(lesson => lesson.level === recommendedLevel).slice(0, 3);
         }
         
-        // توليد نقاط القوة والضعف
+        // Generate strengths and weaknesses
         function generateStrengthsAndWeaknesses(track, ability) {
             const allStrengths = {
                 web: [
-                    "فهم جيد لهيكلة HTML",
-                    "مهارات جيدة في تنسيق CSS",
-                    "قدرة على استخدام JavaScript للتفاعل",
-                    "فهم أساسيات React",
-                    "معرفة جيدة بتطوير الخادم"
+                    "Good understanding of HTML structure",
+                    "Strong CSS styling skills",
+                    "Ability to use JavaScript for interaction",
+                    "Understanding of React basics",
+                    "Good knowledge of server development"
                 ],
                 ai: [
-                    "فهم أساسيات الذكاء الاصطناعي",
-                    "مهارات جيدة في بايثون",
-                    "قدرة على تطبيق خوارزميات التعلم الآلي",
-                    "فهم الشبكات العصبية",
-                    "خبرة في التعلم العميق"
+                    "Understanding of AI fundamentals",
+                    "Strong Python skills",
+                    "Ability to apply ML algorithms",
+                    "Understanding of neural networks",
+                    "Experience with deep learning"
                 ],
                 cyber: [
-                    "فهم أساسيات الأمن السيبراني",
-                    "معرفة جيدة بأمن الشبكات",
-                    "مهارات في الاختراق الأخلاقي",
-                    "خبرة في تشفير البيانات",
-                    "قدرة على مواجهة التهديدات المتقدمة"
+                    "Understanding of cybersecurity fundamentals",
+                    "Good knowledge of network security",
+                    "Skills in ethical hacking",
+                    "Experience with data encryption",
+                    "Ability to counter advanced threats"
+                ],
+                data: [
+                    "Strong data analysis skills",
+                    "Good data visualization ability",
+                    "Statistical analysis proficiency",
+                    "ML application skills",
+                    "Experience with big data technologies"
+                ],
+                mobile: [
+                    "Android development fundamentals",
+                    "iOS development basics",
+                    "Cross-platform development skills",
+                    "Mobile app architecture knowledge",
+                    "Advanced mobile features implementation"
+                ],
+                devops: [
+                    "Docker container skills",
+                    "CI/CD pipeline building",
+                    "Kubernetes orchestration knowledge",
+                    "Infrastructure as code proficiency",
+                    "Cloud DevOps experience"
                 ]
             };
             
             const allWeaknesses = {
                 web: [
-                    "تحتاج إلى تحسين في HTML المتقدم",
-                    "CSS المتقدم يحتاج إلى تدريب",
-                    "JavaScript المتقدم يحتاج إلى ممارسة",
-                    "تحتاج إلى تعلم إطارات عمل إضافية",
-                    "برمجة الخادم تحتاج إلى تعمق"
+                    "Need improvement in advanced HTML",
+                    "Advanced CSS needs training",
+                    "Advanced JavaScript needs practice",
+                    "Need to learn additional frameworks",
+                    "Server programming needs deepening"
                 ],
                 ai: [
-                    "تحتاج إلى تعمق في نظريات الذكاء الاصطناعي",
-                    "بايثون المتقدم يحتاج إلى تحسين",
-                    "خوارزميات التعلم الآلي المعقدة تحتاج إلى فهم أفضل",
-                    "الشبكات العصبية المتقدمة تحتاج إلى دراسة",
-                    "التعلم العميق يحتاج إلى ممارسة إضافية"
+                    "Need to deepen AI theories",
+                    "Advanced Python needs improvement",
+                    "Complex ML algorithms need better understanding",
+                    "Advanced neural networks need study",
+                    "Deep learning needs additional practice"
                 ],
                 cyber: [
-                    "تحتاج إلى تعمق في نظريات الأمن",
-                    "أمن الشبكات المتقدم يحتاج إلى دراسة",
-                    "الاختراق الأخلاقي المتقدم يحتاج إلى تدريب",
-                    "تشفير البيانات المتقدم يحتاج إلى فهم أعمق",
-                    "التهديدات المتقدمة تحتاج إلى استراتيجيات أفضل"
+                    "Need to deepen security theories",
+                    "Advanced network security needs study",
+                    "Advanced ethical hacking needs training",
+                    "Advanced data encryption needs deeper understanding",
+                    "Advanced threats need better strategies"
+                ],
+                data: [
+                    "Need improvement in advanced data analysis",
+                    "Advanced visualization needs practice",
+                    "Complex statistical methods need better understanding",
+                    "Advanced ML applications need study",
+                    "Big data technologies need additional experience"
+                ],
+                mobile: [
+                    "Need improvement in advanced Android",
+                    "Advanced iOS needs practice",
+                    "Complex cross-platform development needs better understanding",
+                    "Advanced architecture patterns need study",
+                    "Complex mobile features need additional implementation"
+                ],
+                devops: [
+                    "Need improvement in advanced Docker",
+                    "Complex CI/CD needs practice",
+                    "Advanced Kubernetes needs better understanding",
+                    "Complex infrastructure as code needs study",
+                    "Advanced cloud DevOps needs additional experience"
                 ]
             };
             
-            // تحديد عدد نقاط القوة والضعف بناءً على مستوى القدرة
+            // Determine number of strengths and weaknesses based on ability
             const strengthCount = Math.max(1, Math.floor(ability * 3));
             const weaknessCount = Math.max(1, Math.floor((1 - ability) * 3));
             
@@ -1305,7 +1615,7 @@
             };
         }
         
-        // عرض تفاصيل التقييم
+        // View assessment details
         async function viewAssessmentDetails(sessionId) {
             try {
                 if (!currentUser) {
@@ -1321,7 +1631,7 @@
                     );
                     
                     if (assessment) {
-                        alert(`تفاصيل التقييم:\nالمسار: ${getTrackName(assessment.track)}\nالنتيجة: ${assessment.correctAnswers}/${assessment.totalQuestions}\nمستوى القدرة: ${(assessment.finalAbility * 100).toFixed(1)}%\nالمستوى الموصى به: ${assessment.recommendedLevel}`);
+                        alert(`Assessment Details:\nTrack: ${getTrackName(assessment.track)}\nScore: ${assessment.correctAnswers}/${assessment.totalQuestions}\nAbility Level: ${(assessment.finalAbility * 100).toFixed(1)}%\nRecommended Level: ${assessment.recommendedLevel}`);
                     }
                 }
             } catch (error) {
@@ -1329,13 +1639,13 @@
             }
         }
         
-        // عرض التوصيات من صفحة النتائج
+        // View recommendations from results page
         function viewRecommendations() {
             showPage('recommendations');
             loadRecommendations();
         }
         
-        // تسجيل الخروج
+        // Logout
         function logout() {
             currentUser = null;
             currentSession = null;
@@ -1343,20 +1653,20 @@
             showPage('login');
         }
         
-        // وظائف مساعدة
+        // Helper functions
         function getTrackName(trackCode) {
             const tracks = {
-                'web': 'تطوير الويب',
-                'ai': 'الذكاء الاصطناعي',
-                'cyber': 'الأمن السيبراني',
-                'data': 'علم البيانات',
-                'mobile': 'تطوير الموبايل',
+                'web': 'Web Development',
+                'ai': 'Artificial Intelligence',
+                'cyber': 'Cybersecurity',
+                'data': 'Data Science',
+                'mobile': 'Mobile Development',
                 'devops': 'DevOps'
             };
             return tracks[trackCode] || trackCode;
         }
         
-        // التحقق من وجود مستخدم عند تحميل الصفحة
+        // Check for existing user on page load
         window.addEventListener('load', () => {
             const savedUser = localStorage.getItem('currentUser');
             if (savedUser) {
