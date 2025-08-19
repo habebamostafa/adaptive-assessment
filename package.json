@@ -1,0 +1,33 @@
+{
+  "name": "adaptive-assessment",
+  "version": "1.0.0",
+  "description": "A sophisticated adaptive learning assessment system that uses reinforcement learning and intelligent question generation to evaluate technical skills across multiple domains.",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/habebamostafa/adaptive-assessment.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/habebamostafa/adaptive-assessment/issues"
+  },
+  "homepage": "https://github.com/habebamostafa/adaptive-assessment#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.1",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.17.2",
+    "react-scripts": "^5.0.1"
+  }
+}

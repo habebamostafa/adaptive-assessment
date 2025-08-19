@@ -1,0 +1,1006 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>نظام التقييم التكيفي - التعلم المعزز</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3a0ca3;
+            --success: #4cc9f0;
+            --danger: #f72585;
+            --warning: #fca311;
+            --light: #f8f9fa;
+            --dark: #212529;
+            --gray: #6c757d;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: #f5f7fb;
+            color: var(--dark);
+            line-height: 1.6;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
+        }
+        
+        header {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            padding: 1rem 0;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        
+        .nav-links {
+            display: flex;
+            list-style: none;
+        }
+        
+        .nav-links li {
+            margin-left: 1.5rem;
+        }
+        
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: opacity 0.3s;
+        }
+        
+        .nav-links a:hover {
+            opacity: 0.8;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background-color: var(--secondary);
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+            color: white;
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+            color: white;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .card-title {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .form-group {
+            margin-bottom: 1rem;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+            background-color: white;
+        }
+        
+        .page {
+            display: none;
+            padding: 2rem 0;
+        }
+        
+        .active-page {
+            display: block;
+        }
+        
+        .assessment-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .question-card {
+            margin-bottom: 1.5rem;
+        }
+        
+        .question-text {
+            font-size: 1.2rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .options-list {
+            list-style: none;
+        }
+        
+        .option-item {
+            padding: 1rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-bottom: 0.75rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .option-item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        .option-item.selected {
+            background-color: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .progress-container {
+            margin-bottom: 1.5rem;
+        }
+        
+        .progress-bar {
+            height: 10px;
+            background-color: #e9ecef;
+            border-radius: 5px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: var(--primary);
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+        
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 1.5rem;
+        }
+        
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+        
+        .stat-label {
+            color: var(--gray);
+        }
+        
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .history-table th,
+        .history-table td {
+            padding: 0.75rem;
+            text-align: right;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .history-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .track-card {
+            text-align: center;
+            padding: 1.5rem;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .track-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .track-icon {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: var(--primary);
+        }
+        
+        .recommendation-card {
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+            }
+            
+            .stats-container {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <nav>
+                <div class="logo">نظام التقييم التكيفي</div>
+                <ul class="nav-links">
+                    <li><a href="#" onclick="showPage('home')">الرئيسية</a></li>
+                    <li><a href="#" onclick="showPage('assessment')">التقييم</a></li>
+                    <li><a href="#" onclick="showPage('history')">سجل التقييمات</a></li>
+                    <li><a href="#" onclick="showPage('recommendations')">التوصيات</a></li>
+                    <li><a href="#" onclick="logout()">تسجيل الخروج</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <!-- صفحة تسجيل الدخول -->
+        <section id="login-page" class="page active-page">
+            <div class="card" style="max-width: 500px; margin: 2rem auto;">
+                <h2 class="card-title">تسجيل الدخول</h2>
+                <form id="login-form">
+                    <div class="form-group">
+                        <label for="login-email" class="form-label">البريد الإلكتروني</label>
+                        <input type="email" id="login-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="login-password" class="form-label">كلمة المرور</label>
+                        <input type="password" id="login-password" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">تسجيل الدخول</button>
+                </form>
+                <p style="text-align: center; margin-top: 1rem;">
+                    ليس لديك حساب؟ <a href="#" onclick="showPage('register')">إنشاء حساب</a>
+                </p>
+            </div>
+        </section>
+
+        <!-- صفحة التسجيل -->
+        <section id="register-page" class="page">
+            <div class="card" style="max-width: 500px; margin: 2rem auto;">
+                <h2 class="card-title">إنشاء حساب جديد</h2>
+                <form id="register-form">
+                    <div class="form-group">
+                        <label for="register-name" class="form-label">الاسم الكامل</label>
+                        <input type="text" id="register-name" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-email" class="form-label">البريد الإلكتروني</label>
+                        <input type="email" id="register-email" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-password" class="form-label">كلمة المرور</label>
+                        <input type="password" id="register-password" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-role" class="form-label">الدور</label>
+                        <select id="register-role" class="form-select" required>
+                            <option value="student">طالب</option>
+                            <option value="teacher">معلم</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-track" class="form-label">المسار التعليمي</label>
+                        <select id="register-track" class="form-select" required>
+                            <option value="web">تطوير الويب</option>
+                            <option value="ai">الذكاء الاصطناعي</option>
+                            <option value="cyber">الأمن السيبراني</option>
+                            <option value="data">علم البيانات</option>
+                            <option value="mobile">تطوير الموبايل</option>
+                            <option value="devops">DevOps</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="register-style" class="form-label">أسلوب التعلم المفضل</label>
+                        <select id="register-style" class="form-select" required>
+                            <option value="visual">بصري</option>
+                            <option value="auditory">سمعي</option>
+                            <option value="kinesthetic">حركي</option>
+                            <option value="reading">قراءة/كتابة</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary" style="width: 100%;">إنشاء حساب</button>
+                </form>
+                <p style="text-align: center; margin-top: 1rem;">
+                    لديك حساب بالفعل؟ <a href="#" onclick="showPage('login')">تسجيل الدخول</a>
+                </p>
+            </div>
+        </section>
+
+        <!-- صفحة الرئيسية -->
+        <section id="home-page" class="page">
+            <div class="card">
+                <h2 class="card-title">مرحباً بك في نظام التقييم التكيفي</h2>
+                <p>هذا النظام يستخدم تقنيات التعلم المعزز لتقييم مستواك وتقديم تجربة تعلم مخصصة بناءً على أدائك.</p>
+                
+                <div class="stats-container" style="margin-top: 2rem;">
+                    <div class="card stat-card">
+                        <div class="stat-value" id="ability-value">0%</div>
+                        <div class="stat-label">مستوى القدرة الحالي</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="assessments-count">0</div>
+                        <div class="stat-label">عدد التقييمات المكتملة</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="accuracy-value">0%</div>
+                        <div class="stat-label">معدل الدقة</div>
+                    </div>
+                </div>
+                
+                <h3 style="margin: 1.5rem 0 1rem;">مسارك الحالي: <span id="current-track">تطوير الويب</span></h3>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-top: 1.5rem;">
+                    <div class="card track-card" onclick="startAssessment('web')">
+                        <div class="track-icon">💻</div>
+                        <h3>تطوير الويب</h3>
+                        <p>HTML, CSS, JavaScript, React, Node.js</p>
+                    </div>
+                    <div class="card track-card" onclick="startAssessment('ai')">
+                        <div class="track-icon">🤖</div>
+                        <h3>الذكاء الاصطناعي</h3>
+                        <p>Machine Learning, Deep Learning, NLP</p>
+                    </div>
+                    <div class="card track-card" onclick="startAssessment('cyber')">
+                        <div class="track-icon">🔒</div>
+                        <h3>الأمن السيبراني</h3>
+                        <p>Network Security, Cryptography, Ethical Hacking</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- صفحة التقييم -->
+        <section id="assessment-page" class="page">
+            <div class="assessment-container">
+                <div class="progress-container">
+                    <div style="display: flex; justify-content: space-between; margin-bottom: 0.5rem;">
+                        <span>السؤال <span id="current-question">1</span> من <span id="total-questions">10</span></span>
+                        <span>مستوى الصعوبة: <span id="difficulty-level">2</span></span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progress-fill" style="width: 10%;"></div>
+                    </div>
+                </div>
+                
+                <div class="card question-card">
+                    <h3 class="question-text" id="question-text">يتم تحميل السؤال...</h3>
+                    <ul class="options-list" id="options-list">
+                        <!-- سيتم ملء الخيارات ديناميكياً -->
+                    </ul>
+                </div>
+                
+                <div style="display: flex; justify-content: space-between;">
+                    <button class="btn btn-danger" onclick="cancelAssessment()">إلغاء التقييم</button>
+                    <button class="btn btn-primary" id="next-button" onclick="submitAnswer()" disabled>إرسال الإجابة</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- صفحة نتائج التقييم -->
+        <section id="results-page" class="page">
+            <div class="assessment-container">
+                <div class="card">
+                    <h2 class="card-title" style="text-align: center;">نتيجة التقييم</h2>
+                    
+                    <div class="stats-container">
+                        <div class="card stat-card">
+                            <div class="stat-value" id="result-score">0/0</div>
+                            <div class="stat-label">الإجابات الصحيحة</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-value" id="result-ability">0%</div>
+                            <div class="stat-label">مستوى القدرة النهائي</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-value" id="result-confidence">0%</div>
+                            <div class="stat-label">مستوى الثقة</div>
+                        </div>
+                        <div class="card stat-card">
+                            <div class="stat-value" id="result-level">0</div>
+                            <div class="stat-label">المستوى الموصى به</div>
+                        </div>
+                    </div>
+                    
+                    <h3 style="margin: 1.5rem 0 1rem;">تحليل الأداء حسب المستوى</h3>
+                    <div id="level-performance">
+                        <!-- سيتم ملء تحليل الأداء ديناميكياً -->
+                    </div>
+                    
+                    <div style="text-align: center; margin-top: 2rem;">
+                        <button class="btn btn-primary" onclick="showPage('home')">العودة إلى الرئيسية</button>
+                        <button class="btn btn-success" onclick="viewRecommendations()">عرض التوصيات</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- صفحة سجل التقييمات -->
+        <section id="history-page" class="page">
+            <div class="card">
+                <h2 class="card-title">سجل التقييمات</h2>
+                
+                <div class="table-responsive">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>التاريخ</th>
+                                <th>المسار</th>
+                                <th>النتيجة</th>
+                                <th>مستوى القدرة</th>
+                                <th>المستوى الموصى به</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            <!-- سيتم ملء سجل التقييمات ديناميكياً -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="no-history" style="text-align: center; padding: 2rem; display: none;">
+                    <p>لا توجد تقييمات سابقة.</p>
+                    <button class="btn btn-primary" onclick="showPage('assessment')">بدء التقييم الأول</button>
+                </div>
+            </div>
+        </section>
+
+        <!-- صفحة التوصيات -->
+        <section id="recommendations-page" class="page">
+            <div class="card">
+                <h2 class="card-title">توصيات التعلم التكيفي</h2>
+                
+                <div class="stats-container">
+                    <div class="card stat-card">
+                        <div class="stat-value" id="rec-ability">0%</div>
+                        <div class="stat-label">مستوى القدرة الحالي</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="rec-difficulty">1</div>
+                        <div class="stat-label">مستوى الصعوبة الموصى به</div>
+                    </div>
+                    <div class="card stat-card">
+                        <div class="stat-value" id="rec-time">0 ساعة</div>
+                        <div class="stat-label">الوقت المتوقع للإتقان</div>
+                    </div>
+                </div>
+                
+                <h3 style="margin: 1.5rem 0 1rem;">الدروس الموصى بها</h3>
+                <div id="recommended-lessons">
+                    <!-- سيتم ملء الدروس الموصى بها ديناميكياً -->
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1.5rem;">
+                    <div>
+                        <h3 style="margin-bottom: 1rem;">نقاط القوة</h3>
+                        <div id="strengths-list">
+                            <!-- سيتم ملء نقاط القوة ديناميكياً -->
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 1rem;">نقاط الضعف</h3>
+                        <div id="weaknesses-list">
+                            <!-- سيتم ملء نقاط الضعف ديناميكياً -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // المتغيرات العامة
+        let currentUser = null;
+        let currentSession = null;
+        let currentQuestion = null;
+        let selectedOption = null;
+        
+        // عناصر DOM
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        
+        // معالجة أحداث النماذج
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            try {
+                const response = await fetch('/api/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    currentUser = data.user;
+                    localStorage.setItem('token', data.token);
+                    showPage('home');
+                    loadUserData();
+                } else {
+                    alert(data.message || 'فشل تسجيل الدخول');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('حدث خطأ أثناء تسجيل الدخول');
+            }
+        });
+        
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('register-name').value;
+            const email = document.getElementById('register-email').value;
+            const password = document.getElementById('register-password').value;
+            const role = document.getElementById('register-role').value;
+            const track = document.getElementById('register-track').value;
+            const preferredLearningStyle = document.getElementById('register-style').value;
+            
+            try {
+                const response = await fetch('/api/register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        name, 
+                        email, 
+                        password, 
+                        role, 
+                        track, 
+                        preferredLearningStyle 
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    alert('تم إنشاء الحساب بنجاح، يرجى تسجيل الدخول');
+                    showPage('login');
+                } else {
+                    alert(data.message || 'فشل إنشاء الحساب');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                alert('حدث خطأ أثناء إنشاء الحساب');
+            }
+        });
+        
+        // وظائف التحكم في الصفحات
+        function showPage(pageId) {
+            // إخفاء جميع الصفحات
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active-page');
+            });
+            
+            // إظهار الصفحة المطلوبة
+            document.getElementById(`${pageId}-page`).classList.add('active-page');
+            
+            // تحميل البيانات عند الحاجة
+            if (pageId === 'home' && currentUser) {
+                loadUserData();
+            } else if (pageId === 'history' && currentUser) {
+                loadAssessmentHistory();
+            } else if (pageId === 'recommendations' && currentUser) {
+                loadRecommendations();
+            }
+        }
+        
+        // تحميل بيانات المستخدم
+        async function loadUserData() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/assessment/history/${currentUser.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // تحديث الإحصائيات
+                    document.getElementById('ability-value').textContent = 
+                        `${(data.averageAbility * 100).toFixed(1)}%`;
+                    document.getElementById('assessments-count').textContent = 
+                        data.totalAssessments;
+                    document.getElementById('accuracy-value').textContent = 
+                        data.totalAssessments > 0 ? 
+                        `${(data.averageAbility * 100).toFixed(1)}%` : '0%';
+                    document.getElementById('current-track').textContent = 
+                        getTrackName(data.preferredTrack);
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+            }
+        }
+        
+        // بدء التقييم
+        async function startAssessment(track) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/assessment/start', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ track })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    currentSession = data.sessionId;
+                    showPage('assessment');
+                    loadQuestion(data.question);
+                } else {
+                    alert('فشل بدء التقييم');
+                }
+            } catch (error) {
+                console.error('Error starting assessment:', error);
+                alert('حدث خطأ أثناء بدء التقييم');
+            }
+        }
+        
+        // تحميل السؤال
+        function loadQuestion(questionData) {
+            currentQuestion = questionData;
+            
+            document.getElementById('question-text').textContent = questionData.text;
+            document.getElementById('difficulty-level').textContent = questionData.level;
+            
+            const optionsList = document.getElementById('options-list');
+            optionsList.innerHTML = '';
+            
+            questionData.options.forEach((option, index) => {
+                const li = document.createElement('li');
+                li.className = 'option-item';
+                li.textContent = option;
+                li.onclick = () => selectOption(index, li);
+                optionsList.appendChild(li);
+            });
+            
+            // تحديث شريط التقدم
+            const progress = (currentQuestion.number / currentQuestion.total) * 100;
+            document.getElementById('progress-fill').style.width = `${progress}%`;
+            document.getElementById('current-question').textContent = currentQuestion.number;
+            document.getElementById('total-questions').textContent = currentQuestion.total;
+            
+            // تعطيل زر الإرسال حتى يتم اختيار إجابة
+            document.getElementById('next-button').disabled = true;
+            selectedOption = null;
+        }
+        
+        // اختيار إجابة
+        function selectOption(index, element) {
+            // إلغاء تحديد جميع الخيارات
+            document.querySelectorAll('.option-item').forEach(item => {
+                item.classList.remove('selected');
+            });
+            
+            // تحديد الخيار الحالي
+            element.classList.add('selected');
+            selectedOption = index;
+            
+            // تمكين زر الإرسال
+            document.getElementById('next-button').disabled = false;
+        }
+        
+        // إرسال الإجابة
+        async function submitAnswer() {
+            if (selectedOption === null) return;
+            
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('/api/assessment/answer', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        sessionId: currentSession,
+                        questionId: currentQuestion.id,
+                        selectedAnswer: selectedOption,
+                        questionData: currentQuestion
+                    })
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    if (data.done) {
+                        // انتهاء التقييم
+                        showResults(data.summary);
+                    } else {
+                        // تحميل السؤال التالي
+                        loadQuestion(data.nextQuestion);
+                    }
+                } else {
+                    alert('فشل إرسال الإجابة');
+                }
+            } catch (error) {
+                console.error('Error submitting answer:', error);
+                alert('حدث خطأ أثناء إرسال الإجابة');
+            }
+        }
+        
+        // إلغاء التقييم
+        function cancelAssessment() {
+            if (confirm('هل أنت متأكد من إلغاء التقييم؟ سيتم فقدان تقدمك الحالي.')) {
+                showPage('home');
+            }
+        }
+        
+        // عرض النتائج
+        function showResults(summary) {
+            document.getElementById('result-score').textContent = 
+                `${summary.correctAnswers}/${summary.totalQuestions}`;
+            document.getElementById('result-ability').textContent = 
+                `${(summary.finalAbility * 100).toFixed(1)}%`;
+            document.getElementById('result-confidence').textContent = 
+                `${(summary.confidenceScore * 100).toFixed(1)}%`;
+            document.getElementById('result-level').textContent = summary.recommendedLevel;
+            
+            // عرض تحليل الأداء حسب المستوى
+            const levelPerformance = document.getElementById('level-performance');
+            levelPerformance.innerHTML = '';
+            
+            if (summary.levelPerformance) {
+                for (const [level, performance] of Object.entries(summary.levelPerformance)) {
+                    const div = document.createElement('div');
+                    div.className = 'recommendation-card';
+                    div.innerHTML = `
+                        <h4>المستوى ${level}</h4>
+                        <p>الدقة: ${(performance.accuracy * 100).toFixed(1)}%</p>
+                        <p>متوسط الوقت: ${performance.avgTime}s</p>
+                    `;
+                    levelPerformance.appendChild(div);
+                }
+            }
+            
+            showPage('results');
+        }
+        
+        // تحميل سجل التقييمات
+        async function loadAssessmentHistory() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/assessment/history/${currentUser.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    const tbody = document.getElementById('history-table-body');
+                    tbody.innerHTML = '';
+                    
+                    if (data.assessmentHistory.length === 0) {
+                        document.getElementById('no-history').style.display = 'block';
+                        return;
+                    }
+                    
+                    document.getElementById('no-history').style.display = 'none';
+                    
+                    data.assessmentHistory.forEach(assessment => {
+                        const tr = document.createElement('tr');
+                        tr.innerHTML = `
+                            <td>${new Date(assessment.date).toLocaleDateString('ar-EG')}</td>
+                            <td>${getTrackName(assessment.track)}</td>
+                            <td>${assessment.score} (${assessment.accuracy})</td>
+                            <td>${assessment.finalAbility}</td>
+                            <td>${assessment.recommendedLevel}</td>
+                            <td>
+                                <button class="btn btn-primary" onclick="viewAssessmentDetails('${assessment.sessionId}')">التفاصيل</button>
+                            </td>
+                        `;
+                        tbody.appendChild(tr);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading assessment history:', error);
+            }
+        }
+        
+        // تحميل التوصيات
+        async function loadRecommendations() {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/adaptive-recommendations/${currentUser.id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    document.getElementById('rec-ability').textContent = 
+                        `${(data.currentAbility * 100).toFixed(1)}%`;
+                    document.getElementById('rec-difficulty').textContent = 
+                        data.recommendedDifficulty;
+                    document.getElementById('rec-time').textContent = 
+                        `${data.estimatedTimeToMastery} ساعة`;
+                    
+                    // عرض الدروس الموصى بها
+                    const lessonsContainer = document.getElementById('recommended-lessons');
+                    lessonsContainer.innerHTML = '';
+                    
+                    if (data.recommendedLessons && data.recommendedLessons.length > 0) {
+                        data.recommendedLessons.forEach(lesson => {
+                            const div = document.createElement('div');
+                            div.className = 'recommendation-card';
+                            div.innerHTML = `
+                                <h4>${lesson.title}</h4>
+                                <p>${lesson.description}</p>
+                                <p>المستوى: ${lesson.level} | الوقت المتوقع: ${lesson.duration} دقيقة</p>
+                            `;
+                            lessonsContainer.appendChild(div);
+                        });
+                    } else {
+                        lessonsContainer.innerHTML = '<p>لا توجد دروس موصى بها حالياً.</p>';
+                    }
+                    
+                    // عرض نقاط القوة والضعف
+                    const strengthsList = document.getElementById('strengths-list');
+                    const weaknessesList = document.getElementById('weaknesses-list');
+                    strengthsList.innerHTML = '';
+                    weaknessesList.innerHTML = '';
+                    
+                    if (data.strengths && data.strengths.length > 0) {
+                        data.strengths.forEach(strength => {
+                            const p = document.createElement('p');
+                            p.textContent = strength;
+                            strengthsList.appendChild(p);
+                        });
+                    } else {
+                        strengthsList.innerHTML = '<p>لا توجد نقاط قوة مسجلة.</p>';
+                    }
+                    
+                    if (data.weaknesses && data.weaknesses.length > 0) {
+                        data.weaknesses.forEach(weakness => {
+                            const p = document.createElement('p');
+                            p.textContent = weakness;
+                            weaknessesList.appendChild(p);
+                        });
+                    } else {
+                        weaknessesList.innerHTML = '<p>لا توجد نقاط ضعف مسجلة.</p>';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading recommendations:', error);
+            }
+        }
+        
+        // عرض تفاصيل التقييم
+        async function viewAssessmentDetails(sessionId) {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch(`/api/assessment/analytics/${sessionId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    alert(`تفاصيل التقييم:\nالمسار: ${getTrackName(data.session.track)}\nمستوى القدرة: ${(data.session.studentAbility * 100).toFixed(1)}%\nمستوى الثقة: ${(data.session.confidenceScore * 100).toFixed(1)}%`);
+                }
+            } catch (error) {
+                console.error('Error loading assessment details:', error);
+            }
+        }
+        
+        // عرض التوصيات من صفحة النتائج
+        function viewRecommendations() {
+            showPage('recommendations');
+            loadRecommendations();
+        }
+        
+        // تسجيل الخروج
+        function logout() {
+            currentUser = null;
+            currentSession = null;
+            localStorage.removeItem('token');
+            showPage('login');
+        }
+        
+        // وظائف مساعدة
+        function getTrackName(trackCode) {
+            const tracks = {
+                'web': 'تطوير الويب',
+                'ai': 'الذكاء الاصطناعي',
+                'cyber': 'الأمن السيبراني',
+                'data': 'علم البيانات',
+                'mobile': 'تطوير الموبايل',
+                'devops': 'DevOps'
+            };
+            return tracks[trackCode] || trackCode;
+        }
+        
+        // التحقق من وجود token عند تحميل الصفحة
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('token');
+            if (token) {
+                // محاولة جلب بيانات المستخدم باستخدام token
+                // في تطبيق حقيقي، يجب التحقق من صحة token مع الخادم
+                showPage('home');
+            } else {
+                showPage('login');
+            }
+        });
+    </script>
+</body>
+</html>
+
