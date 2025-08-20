@@ -1,3 +1,7 @@
+"""MCQ Generator - Robust API Version
+Enhanced error handling and multiple API approaches
+"""
+
 import streamlit as st
 import json
 import time
@@ -67,12 +71,12 @@ class RobustMCQGenerator:
             self.api_status = "hf_not_available"
             return
         
-        # Method 1: Try InferenceClient
+        # Method 1: Try InferenceClient with a more reliable model
         if self._test_inference_client():
             self.api_status = "inference_client_ready"
             return
         
-        # Method 2: Try direct HTTP requests
+        # Method 2: Try direct HTTP requests with a different model
         if self._test_direct_api():
             self.api_status = "direct_api_ready"
             return
@@ -80,13 +84,13 @@ class RobustMCQGenerator:
         self.api_status = "api_failed"
     
     def _test_inference_client(self):
-        """Test InferenceClient method"""
+        """Test InferenceClient method with a more reliable model"""
         try:
             self.client = InferenceClient(token=self.hf_token)
             
-            # Simple test call - REMOVED TIMEOUT PARAMETER
+            # Use a different model that's more likely to work
             test_response = self.client.text_generation(
-                model="google/flan-t5-small",  # Use smallest model for testing
+                model="microsoft/DialoGPT-small",  # Use a different model
                 prompt="Hello",
                 max_new_tokens=5
             )
@@ -96,9 +100,10 @@ class RobustMCQGenerator:
             return False
     
     def _test_direct_api(self):
-        """Test direct API calls"""
+        """Test direct API calls with a different model"""
         try:
-            url = "https://api-inference.huggingface.co/models/google/flan-t5-small"
+            # Try a different model endpoint
+            url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-small"
             headers = {
                 "Authorization": f"Bearer {self.hf_token}",
                 "Content-Type": "application/json"
@@ -226,9 +231,9 @@ class RobustMCQGenerator:
                 "hard": [
                     {
                         "question": "What is the vanishing gradient problem?",
-                        "options": ["Gradients become very small in early layers during backpropagation", "Model outputs become zero", "Training data disappears", "Network connections break"],
-                        "correct_answer": "Gradients become very small in early layers during backpropagation",
-                        "explanation": "The vanishing gradient problem occurs when gradients become exponentially smaller as they propagate backward through deep networks, making early layers difficult to train."
+                        "options": ["Gradients become extremely small during backpropagation", "Model outputs become zero", "Training data disappears", "Network connections break"],
+                        "correct_answer": "Gradients become extremely small during backpropagation",
+                        "explanation": "The vanishing gradient problem occurs when gradients become exponentially smaller during backpropagation, making it difficult to train deep networks."
                     }
                 ]
             },
@@ -370,9 +375,9 @@ class RobustMCQGenerator:
         try:
             prompt = self._create_simple_prompt(track, difficulty)
             
-            # REMOVED TIMEOUT PARAMETER
+            # Use a different model that's more likely to work
             response = self.client.text_generation(
-                model="google/flan-t5-small",  # Use smaller, more reliable model
+                model="microsoft/DialoGPT-small",  # Use a different model
                 prompt=prompt,
                 max_new_tokens=200,
                 temperature=0.7
@@ -392,7 +397,8 @@ class RobustMCQGenerator:
         try:
             prompt = self._create_simple_prompt(track, difficulty)
             
-            url = "https://api-inference.huggingface.co/models/google/flan-t5-small"
+            # Try a different model endpoint
+            url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-small"
             headers = {
                 "Authorization": f"Bearer {self.hf_token}",
                 "Content-Type": "application/json"
@@ -425,18 +431,19 @@ class RobustMCQGenerator:
     def _create_simple_prompt(self, track: str, difficulty: str) -> str:
         """Create a simple, effective prompt"""
         return f"""Create a {difficulty} level multiple choice question about {self.available_tracks[track]}.
-            Format:
-            Question: [your question]
-            A) [option 1]
-            B) [option 2]  
-            C) [option 3]
-            D) [option 4]
-            Answer: [A/B/C/D]
-            Explanation: [brief explanation]
 
-            Topic: {self.available_tracks[track]}
-            Level: {difficulty}
-            """
+Format:
+Question: [your question]
+A) [option 1]
+B) [option 2]  
+C) [option 3]
+D) [option 4]
+Answer: [A/B/C/D]
+Explanation: [brief explanation]
+
+Topic: {self.available_tracks[track]}
+Level: {difficulty}
+"""
     
     def _extract_response_text(self, response) -> str:
         """Extract text from various response formats"""
