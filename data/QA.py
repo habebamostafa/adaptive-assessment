@@ -207,7 +207,7 @@ class SimpleMCQGenerator:
             
             response = self.client.text_generation(
                 model="google/flan-t5-large",
-                inputs=prompt,
+                prompt=prompt,
                 parameters={
                     "max_new_tokens": 400,
                     "temperature": 0.7,
