@@ -398,7 +398,7 @@ class RobustMCQGenerator:
             prompt = self._create_simple_prompt(track, difficulty)
             
             # Try a different model endpoint
-            url = "https://huggingface.co/api/models/google/flan-t5-small?expan"
+            url = "https://huggingface.co/api/models/google/flan-t5-large"
             headers = {
                 "Authorization": f"Bearer {self.hf_token}",
                 "Content-Type": "application/json"
