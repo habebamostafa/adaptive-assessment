@@ -25,24 +25,9 @@ class FlanT5MCQGenerator:
         
         # Set Hugging Face token
         self.hf_token = st.secrets["token"]
-        if hf_token:
-            os.environ['token'] = hf_token
-            self.client = InferenceClient()
-            try:
-                login(token=hf_token)
-                st.success("✅ تم تسجيل الدخول إلى Hugging Face بنجاح!")
-            except Exception as e:
-                st.error(f"❌ خطأ في تسجيل الدخول: {e}")
+        os.environ['HUGGINGFACEHUB_API_TOKEN'] = self.hf_token
         
-        # Initialize Hugging Face Inference Client
-        self.client = None
-        if hf_token:
-            try:
-                self.client = InferenceClient()
-                st.success("✅ تم تهيئة عميل Hugging Face بنجاح!")
-            except Exception as e:
-                st.error(f"❌ خطأ في تهيئة العميل: {e}")
-    
+
     def get_available_tracks(self) -> List[str]:
         """Get list of available technology tracks"""
         return list(self.available_tracks.keys())
