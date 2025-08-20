@@ -203,7 +203,9 @@ class SimpleMCQGenerator:
         """Generate question using AI (FLAN-T5)"""
         if not self.client or not self.hf_token:
             return self.get_demo_question(track, difficulty)
+        
         client = InferenceClient(token=self.hf_token)
+        
         try:
             prompt = self._create_prompt(track, difficulty)
             
@@ -214,19 +216,19 @@ class SimpleMCQGenerator:
                 temperature=0.7,
                 do_sample=True
             )
-            if isinstance(response, list) and "generated_text" in response[0]:
+            
+            # تحقق من الاستجابة واستخراج النص
+            if isinstance(response, list) and len(response) > 0 and "generated_text" in response[0]:
                 generated_text = response[0]["generated_text"]
                 return self._parse_response(generated_text, track, difficulty)
             else:
                 st.warning("⚠️ لم يتم توليد نص صحيح من AI، استخدام الأسئلة التجريبية")
                 return self.get_demo_question(track, difficulty)
-                    
-            return self._parse_response(generated_text,response, track, difficulty)
             
         except Exception as e:
             st.warning(f"AI generation failed: {e}")
             return self.get_demo_question(track, difficulty)
-    
+        
     def _create_prompt(self, track: str, difficulty: str) -> str:
         """Create prompt for FLAN-T5"""
         track_desc = self.available_tracks[track]
