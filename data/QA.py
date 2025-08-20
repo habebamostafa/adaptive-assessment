@@ -1,311 +1,262 @@
 """
-Enhanced MCQ Generator using Google's FLAN-T5 with Hugging Face Token and CrewAI Agents
+Enhanced MCQ Generator using Google's FLAN-T5 with Hugging Face Token
+Fixed and Simplified Version
 """
 
 import streamlit as st
 import requests
-from typing import List, Dict, Optional
 import json
 import random
 import time
-from huggingface_hub import InferenceClient
+from typing import List, Dict, Optional
 import os
-from crewai import Agent, Task, Crew, Process
-from crewai.tools import BaseTool
-from langchain.llms import HuggingFaceHub
-from langchain.schema import BaseLanguageModel
 
-# Custom tool for question generation
-class QuestionGenerationTool(BaseTool):
-    name: str = "question_generator"
-    description: str = "Generates technical interview questions using FLAN-T5"
-    
-    def _run(self, topic: str, difficulty: str) -> str:
-        """Generate a question using the tool"""
-        # This would connect to your FLAN-T5 model
-        return f"Generated question about {topic} at {difficulty} level"
+try:
+    from huggingface_hub import InferenceClient
+    HF_AVAILABLE = True
+except ImportError:
+    HF_AVAILABLE = False
 
-class EnhancedFlanT5MCQGenerator:
+class SimpleMCQGenerator:
     def __init__(self):
-        """Initialize the MCQ generator with Hugging Face token and CrewAI agents"""
+        """Initialize the MCQ generator"""
         self.available_tracks = {
-            "web": "Web Development (HTML, CSS, JavaScript, React, Vue, Angular, etc.)",
-            "ai": "Artificial Intelligence (Machine Learning, Deep Learning, NLP, Computer Vision, etc.)",
-            "cyber": "Cybersecurity (Network Security, Encryption, Ethical Hacking, Penetration Testing, etc.)",
-            "data": "Data Science (Data Analysis, Visualization, Statistics, Big Data, etc.)",
-            "mobile": "Mobile Development (Android, iOS, Flutter, React Native, Kotlin, Swift, etc.)",
-            "devops": "DevOps (Docker, Kubernetes, CI/CD, Cloud Computing, AWS, Azure, etc.)",
-            "backend": "Backend Development (APIs, Databases, Microservices, System Design, etc.)",
-            "frontend": "Frontend Development (UI/UX, Responsive Design, Performance, Accessibility, etc.)"
+            "web": "Web Development (HTML, CSS, JavaScript, React, Vue, Angular)",
+            "ai": "Artificial Intelligence (Machine Learning, Deep Learning, NLP)",
+            "cyber": "Cybersecurity (Network Security, Encryption, Ethical Hacking)",
+            "data": "Data Science (Data Analysis, Visualization, Statistics, Python)",
+            "mobile": "Mobile Development (Android, iOS, Flutter, React Native)",
+            "devops": "DevOps (Docker, Kubernetes, CI/CD, Cloud Computing)",
+            "backend": "Backend Development (APIs, Databases, Microservices)",
+            "frontend": "Frontend Development (UI/UX, Responsive Design)"
         }
         
         # Initialize Hugging Face client
         self.hf_token = None
         self.client = None
         self._setup_hugging_face()
-        
-        # Initialize CrewAI agents
-        self.agents = self._create_crewai_agents()
-        
+    
     def _setup_hugging_face(self):
         """Setup Hugging Face connection"""
-        try:
-            # Get token from Streamlit secrets
-            if "hf_token" in st.secrets:
-                self.hf_token = st.secrets["hf_token"]
-                os.environ["HUGGINGFACEHUB_API_TOKEN"] = self.hf_token
-                
-                # Initialize the client
-                self.client = InferenceClient(
-                    model="google/flan-t5-large",
-                    token=self.hf_token
-                )
-                st.success("✅ Hugging Face connection established successfully!")
-            else:
-                st.warning("⚠️ Hugging Face token not found in secrets. Using demo mode.")
-        except Exception as e:
-            st.error(f"❌ Error setting up Hugging Face: {e}")
+        if not HF_AVAILABLE:
+            st.warning("⚠️ Hugging Face Hub not available. Install with: pip install huggingface-hub")
+            return
             
-    def _create_crewai_agents(self) -> Dict[str, Agent]:
-        """Create specialized CrewAI agents for different tasks"""
-        
-        # Question Designer Agent
-        question_designer = Agent(
-            role='Technical Question Designer',
-            goal='Design comprehensive and challenging technical interview questions',
-            backstory="""You are an expert technical interviewer with 10+ years of experience 
-            in evaluating candidates across different technology domains. You excel at creating 
-            questions that test both theoretical knowledge and practical application.""",
-            verbose=True,
-            allow_delegation=False
-        )
-        
-        # Content Reviewer Agent
-        content_reviewer = Agent(
-            role='Content Quality Reviewer',
-            goal='Review and improve the quality of generated questions',
-            backstory="""You are a meticulous content reviewer specializing in technical education. 
-            Your expertise lies in ensuring questions are accurate, well-structured, and 
-            appropriately challenging for the target difficulty level.""",
-            verbose=True,
-            allow_delegation=False
-        )
-        
-        # Difficulty Assessor Agent
-        difficulty_assessor = Agent(
-            role='Difficulty Level Assessor',
-            goal='Assess and calibrate the difficulty level of technical questions',
-            backstory="""You are a learning assessment specialist who understands how to 
-            properly calibrate question difficulty based on skill levels from beginner 
-            to expert in various technology domains.""",
-            verbose=True,
-            allow_delegation=False
-        )
-        
-        # Answer Validator Agent
-        answer_validator = Agent(
-            role='Answer Validation Specialist',
-            goal='Validate correct answers and create comprehensive explanations',
-            backstory="""You are a technical expert with deep knowledge across multiple 
-            technology domains. You ensure that correct answers are accurate and 
-            explanations are clear and educational.""",
-            verbose=True,
-            allow_delegation=False
-        )
-        
-        return {
-            'designer': question_designer,
-            'reviewer': content_reviewer,
-            'assessor': difficulty_assessor,
-            'validator': answer_validator
-        }
+        try:
+            # Get token from secrets
+            if hasattr(st, 'secrets') and hasattr(st.secrets, 'get'):
+                self.hf_token = st.secrets.get("hf_token", None)
+            
+            if self.hf_token:
+                self.client = InferenceClient(token=self.hf_token)
+                st.success("✅ Hugging Face connected successfully!")
+            else:
+                st.info("ℹ️ No Hugging Face token found. Using demo mode.")
+        except Exception as e:
+            st.warning(f"⚠️ Hugging Face setup failed: {e}")
     
     def get_available_tracks(self) -> List[str]:
         """Get list of available technology tracks"""
         return list(self.available_tracks.keys())
     
-    def generate_question_with_crew(self, track: str, difficulty: str = "medium") -> Dict:
-        """
-        Generate a question using CrewAI agents and FLAN-T5
+    def get_demo_question(self, track: str, difficulty: str) -> Dict:
+        """Get a demo question for the specified track and difficulty"""
+        demo_questions = {
+            "web": {
+                "easy": {
+                    "question": "What does HTML stand for?",
+                    "options": [
+                        "HyperText Markup Language",
+                        "High Tech Modern Language", 
+                        "Home Tool Markup Language",
+                        "Hyperlink Text Management Language"
+                    ],
+                    "correct_answer": "HyperText Markup Language",
+                    "explanation": "HTML stands for HyperText Markup Language, the standard markup language for web pages."
+                },
+                "medium": {
+                    "question": "What is the primary benefit of React's Virtual DOM?",
+                    "options": [
+                        "Optimizes rendering by minimizing DOM operations",
+                        "Provides direct database connectivity",
+                        "Automatically generates CSS styles",
+                        "Enables server-side rendering only"
+                    ],
+                    "correct_answer": "Optimizes rendering by minimizing DOM operations",
+                    "explanation": "Virtual DOM creates a virtual representation of the UI and efficiently updates only changed parts."
+                },
+                "hard": {
+                    "question": "How does webpack's tree shaking optimize bundle size?",
+                    "options": [
+                        "Eliminates unused code through static analysis",
+                        "Compresses images automatically",
+                        "Minifies CSS files only",
+                        "Removes HTML comments"
+                    ],
+                    "correct_answer": "Eliminates unused code through static analysis",
+                    "explanation": "Tree shaking removes dead code by analyzing ES6 module imports/exports during build."
+                }
+            },
+            "ai": {
+                "easy": {
+                    "question": "What is the main goal of machine learning?",
+                    "options": [
+                        "Enable computers to learn from data automatically",
+                        "Create human-like robots only",
+                        "Replace all human workers",
+                        "Process images exclusively"
+                    ],
+                    "correct_answer": "Enable computers to learn from data automatically",
+                    "explanation": "Machine learning allows computers to improve performance on tasks through experience."
+                },
+                "medium": {
+                    "question": "What distinguishes supervised from unsupervised learning?",
+                    "options": [
+                        "Supervised uses labeled data, unsupervised finds patterns in unlabeled data",
+                        "Supervised is always faster",
+                        "Unsupervised requires human oversight",
+                        "Supervised only works with images"
+                    ],
+                    "correct_answer": "Supervised uses labeled data, unsupervised finds patterns in unlabeled data",
+                    "explanation": "Supervised learning learns from labeled examples, while unsupervised finds hidden patterns."
+                },
+                "hard": {
+                    "question": "What is the key innovation of Transformer architecture?",
+                    "options": [
+                        "Self-attention mechanism for parallel sequence processing",
+                        "Convolutional layers for text processing",
+                        "Recurrent connections for memory",
+                        "Reinforcement learning integration"
+                    ],
+                    "correct_answer": "Self-attention mechanism for parallel sequence processing",
+                    "explanation": "Transformers use self-attention to process all sequence positions simultaneously."
+                }
+            },
+            "cyber": {
+                "easy": {
+                    "question": "What is a firewall's primary function?",
+                    "options": [
+                        "Control network traffic based on security rules",
+                        "Encrypt hard drive data",
+                        "Prevent physical device access",
+                        "Create data backups automatically"
+                    ],
+                    "correct_answer": "Control network traffic based on security rules",
+                    "explanation": "Firewalls monitor and filter network traffic according to security policies."
+                },
+                "medium": {
+                    "question": "What's the difference between symmetric and asymmetric encryption?",
+                    "options": [
+                        "Symmetric uses one key, asymmetric uses public/private key pairs",
+                        "Symmetric is always more secure",
+                        "Asymmetric is only for SSL/TLS",
+                        "Symmetric only encrypts text"
+                    ],
+                    "correct_answer": "Symmetric uses one key, asymmetric uses public/private key pairs",
+                    "explanation": "Symmetric encryption uses the same key for encryption/decryption, asymmetric uses paired keys."
+                },
+                "hard": {
+                    "question": "What makes zero-day vulnerabilities particularly dangerous?",
+                    "options": [
+                        "They're unknown to vendors with no available patches",
+                        "They only work on new systems",
+                        "They can only be exploited at midnight",
+                        "They require no user interaction"
+                    ],
+                    "correct_answer": "They're unknown to vendors with no available patches",
+                    "explanation": "Zero-day vulnerabilities are unknown security flaws with no existing defenses."
+                }
+            }
+        }
         
-        Args:
-            track: Technology track
-            difficulty: Difficulty level (easy, medium, hard)
+        # Get the question or return a generic one
+        if track in demo_questions and difficulty in demo_questions[track]:
+            demo = demo_questions[track][difficulty]
+            return {
+                'text': demo['question'],
+                'options': demo['options'],
+                'correct_answer': demo['correct_answer'],
+                'explanation': demo['explanation'],
+                'track': track,
+                'difficulty': difficulty,
+                'generated_by': 'Demo Mode'
+            }
+        else:
+            return {
+                'text': f"What is an important concept in {self.available_tracks[track]}?",
+                'options': [
+                    "The correct answer for this topic",
+                    "An incorrect but plausible option",
+                    "Another incorrect alternative",
+                    "A clearly wrong choice"
+                ],
+                'correct_answer': "The correct answer for this topic",
+                'explanation': f"This tests {difficulty} level knowledge of {self.available_tracks[track]}.",
+                'track': track,
+                'difficulty': difficulty,
+                'generated_by': 'Generic Demo'
+            }
+    
+    def generate_with_ai(self, track: str, difficulty: str) -> Dict:
+        """Generate question using AI (FLAN-T5)"""
+        if not self.client or not self.hf_token:
+            return self.get_demo_question(track, difficulty)
         
-        Returns:
-            Question dictionary
-        """
         try:
-            # Create tasks for the crew
-            tasks = self._create_crew_tasks(track, difficulty)
+            prompt = self._create_prompt(track, difficulty)
             
-            # Create and run the crew
-            crew = Crew(
-                agents=list(self.agents.values()),
-                tasks=tasks,
-                process=Process.sequential,
-                verbose=True
+            response = self.client.text_generation(
+                model="google/flan-t5-large",
+                inputs=prompt,
+                parameters={
+                    "max_new_tokens": 400,
+                    "temperature": 0.7,
+                    "do_sample": True,
+                    "return_full_text": False
+                }
             )
             
-            # Execute the crew workflow
-            with st.spinner("🤖 CrewAI agents are collaborating to generate your question..."):
-                result = crew.kickoff()
-            
-            # Parse and return the result
-            return self._parse_crew_result(result, track, difficulty)
+            return self._parse_response(response, track, difficulty)
             
         except Exception as e:
-            st.error(f"Error with CrewAI generation: {e}")
-            return self._generate_with_flan_t5_fallback(track, difficulty)
+            st.warning(f"AI generation failed: {e}")
+            return self.get_demo_question(track, difficulty)
     
-    def _create_crew_tasks(self, track: str, difficulty: str) -> List[Task]:
-        """Create tasks for the CrewAI agents"""
+    def _create_prompt(self, track: str, difficulty: str) -> str:
+        """Create prompt for FLAN-T5"""
+        track_desc = self.available_tracks[track]
         
-        # Task 1: Design the question
-        design_task = Task(
-            description=f"""
-            Design a {difficulty} level multiple choice question for {self.available_tracks[track]}.
-            The question should be:
-            1. Technically accurate and relevant to job interviews
-            2. Have exactly 4 options (A, B, C, D)
-            3. Test practical knowledge, not just memorization
-            4. Be appropriate for the {difficulty} difficulty level
-            
-            Include the question text, four distinct options, and identify the correct answer.
-            """,
-            agent=self.agents['designer'],
-            expected_output="A well-structured multiple choice question with 4 options"
-        )
-        
-        # Task 2: Review and improve
-        review_task = Task(
-            description=f"""
-            Review the generated question for:
-            1. Technical accuracy
-            2. Clarity of language
-            3. Appropriateness of difficulty level
-            4. Quality of distractors (incorrect options)
-            
-            Make improvements if necessary and ensure the question meets high standards.
-            """,
-            agent=self.agents['reviewer'],
-            expected_output="Reviewed and improved question with quality feedback"
-        )
-        
-        # Task 3: Validate answers and create explanation
-        validate_task = Task(
-            description=f"""
-            Validate the correct answer and create a comprehensive explanation that:
-            1. Confirms why the correct answer is right
-            2. Explains why other options are incorrect
-            3. Provides additional context or learning points
-            4. Uses clear, educational language
-            
-            Format the final output as JSON with: question, options, correct_answer, explanation
-            """,
-            agent=self.agents['validator'],
-            expected_output="Final validated question with comprehensive explanation in JSON format"
-        )
-        
-        return [design_task, review_task, validate_task]
-    
-    def _parse_crew_result(self, result: str, track: str, difficulty: str) -> Dict:
-        """Parse the result from CrewAI agents"""
-        try:
-            # Try to extract JSON from the result
-            json_start = result.find('{')
-            json_end = result.rfind('}') + 1
-            
-            if json_start >= 0 and json_end > json_start:
-                json_str = result[json_start:json_end]
-                data = json.loads(json_str)
-                
-                # Convert to our expected format
-                options_dict = data.get("options", {})
-                options_list = [
-                    options_dict.get("A", "Option A"),
-                    options_dict.get("B", "Option B"),
-                    options_dict.get("C", "Option C"),
-                    options_dict.get("D", "Option D")
-                ]
-                
-                correct_key = data.get("correct_answer", "A")
-                correct_answer_text = options_dict.get(correct_key, options_list[0])
-                
-                return {
-                    'text': data.get("question", f"What is a key concept in {self.available_tracks[track]}?"),
-                    'options': options_list,
-                    'correct_answer': correct_answer_text,
-                    'explanation': data.get("explanation", f"This is a {difficulty} level question about {self.available_tracks[track]}."),
-                    'track': track,
-                    'difficulty': difficulty,
-                    'generated_by': 'CrewAI + FLAN-T5',
-                    'crew_generated': True
-                }
-            else:
-                raise ValueError("No valid JSON found in crew result")
-                
-        except Exception as e:
-            st.warning(f"Error parsing crew result: {e}. Using fallback generation.")
-            return self._generate_with_flan_t5_fallback(track, difficulty)
-    
-    def _generate_with_flan_t5_fallback(self, track: str, difficulty: str) -> Dict:
-        """Fallback to direct FLAN-T5 generation"""
-        try:
-            prompt = self._create_flan_t5_prompt(track, difficulty)
-            
-            if self.client and self.hf_token:
-                response = self.client.text_generation(
-                    inputs=prompt,
-                    max_new_tokens=500,
-                    temperature=0.7,
-                    do_sample=True
-                )
-                
-                # Parse response
-                return self._parse_flan_t5_response(response, track, difficulty)
-            else:
-                return self._create_demo_question(track, difficulty)
-                
-        except Exception as e:
-            st.error(f"Error with FLAN-T5 fallback: {e}")
-            return self._create_demo_question(track, difficulty)
-    
-    def _create_flan_t5_prompt(self, track: str, difficulty: str) -> str:
-        """Create a detailed prompt for FLAN-T5 model"""
-        track_description = self.available_tracks[track]
-        
-        prompt = f"""
-        Create a {difficulty} difficulty multiple choice question about {track_description}.
-        
-        Requirements:
-        - Technical and interview-appropriate
-        - Test practical knowledge
-        - Have exactly 4 options (A, B, C, D)
-        - Include brief explanation
-        
-        Format as JSON:
-        {{
-            "question": "question text",
-            "options": {{
-                "A": "option A",
-                "B": "option B", 
-                "C": "option C",
-                "D": "option D"
-            }},
-            "correct_answer": "A",
-            "explanation": "explanation text"
-        }}
-        
-        Topic: {track_description}
-        Difficulty: {difficulty}
-        """
-        
+        prompt = f"""Create a {difficulty} level multiple choice question about {track_desc}.
+
+Requirements:
+- Professional interview quality
+- Test practical knowledge  
+- Exactly 4 options (A, B, C, D)
+- One correct answer
+- Brief explanation
+
+Format as JSON:
+{{
+    "question": "question text here",
+    "options": {{
+        "A": "first option",
+        "B": "second option", 
+        "C": "third option",
+        "D": "fourth option"
+    }},
+    "correct_answer": "A",
+    "explanation": "explanation text"
+}}
+
+Topic: {track_desc}
+Level: {difficulty}
+"""
         return prompt
     
-    def _parse_flan_t5_response(self, response: str, track: str, difficulty: str) -> Dict:
-        """Parse FLAN-T5 response"""
+    def _parse_response(self, response: str, track: str, difficulty: str) -> Dict:
+        """Parse AI response"""
         try:
+            # Find JSON in response
             json_start = response.find('{')
             json_end = response.rfind('}') + 1
             
@@ -325,164 +276,73 @@ class EnhancedFlanT5MCQGenerator:
                 correct_answer_text = options_dict.get(correct_key, options_list[0])
                 
                 return {
-                    'text': data.get("question", f"What is a key concept in {self.available_tracks[track]}?"),
+                    'text': data.get("question", f"What is important in {track}?"),
                     'options': options_list,
                     'correct_answer': correct_answer_text,
-                    'explanation': data.get("explanation", f"This is a {difficulty} level question about {self.available_tracks[track]}."),
+                    'explanation': data.get("explanation", f"This tests {difficulty} {track} knowledge."),
                     'track': track,
                     'difficulty': difficulty,
-                    'generated_by': 'FLAN-T5',
-                    'direct_flan_t5': True
+                    'generated_by': 'FLAN-T5 AI'
                 }
             else:
-                raise ValueError("No valid JSON in response")
+                raise ValueError("No JSON found")
                 
         except Exception as e:
-            return self._create_demo_question(track, difficulty)
+            return self.get_demo_question(track, difficulty)
     
-    def _create_demo_question(self, track: str, difficulty: str) -> Dict:
-        """Create demo questions for different tracks and difficulties"""
-        demo_questions = {
-            "web": {
-                "easy": {
-                    "question": "What does HTML stand for in web development?",
-                    "options": ["HyperText Markup Language", "High Tech Modern Language", "Home Tool Markup Language", "Hyperlink Text Management Language"],
-                    "correct_answer": "HyperText Markup Language",
-                    "explanation": "HTML stands for HyperText Markup Language, which is the standard markup language for creating web pages."
-                },
-                "medium": {
-                    "question": "What is the main benefit of using React's Virtual DOM?",
-                    "options": ["Faster DOM manipulation through efficient diffing", "Direct database connectivity", "Automatic CSS styling", "Built-in security features"],
-                    "correct_answer": "Faster DOM manipulation through efficient diffing",
-                    "explanation": "React's Virtual DOM improves performance by creating a virtual representation of the UI and efficiently updating only the parts that have changed."
-                },
-                "hard": {
-                    "question": "How does webpack's tree shaking optimization work?",
-                    "options": ["Eliminates dead code by analyzing ES6 module imports", "Compresses images automatically", "Minifies CSS files only", "Removes unused HTML elements"],
-                    "correct_answer": "Eliminates dead code by analyzing ES6 module imports",
-                    "explanation": "Tree shaking is a dead-code elimination technique that removes unused exports from ES6 modules during the build process."
-                }
-            },
-            "ai": {
-                "easy": {
-                    "question": "What is the primary purpose of machine learning?",
-                    "options": ["Enable computers to learn from data without explicit programming", "Create human-like robots", "Replace all human workers", "Process images only"],
-                    "correct_answer": "Enable computers to learn from data without explicit programming",
-                    "explanation": "Machine learning allows computers to automatically improve their performance on a task through experience and data."
-                },
-                "medium": {
-                    "question": "What distinguishes supervised learning from unsupervised learning?",
-                    "options": ["Supervised uses labeled data, unsupervised finds patterns in unlabeled data", "Supervised is faster than unsupervised", "Unsupervised requires human oversight", "Supervised only works with images"],
-                    "correct_answer": "Supervised uses labeled data, unsupervised finds patterns in unlabeled data",
-                    "explanation": "Supervised learning trains on labeled examples to make predictions, while unsupervised learning discovers hidden patterns in data without labels."
-                },
-                "hard": {
-                    "question": "What is the key innovation of the Transformer architecture in deep learning?",
-                    "options": ["Self-attention mechanism for parallel processing of sequences", "Use of convolutional layers for text", "Recurrent connections for memory", "Reinforcement learning integration"],
-                    "correct_answer": "Self-attention mechanism for parallel processing of sequences",
-                    "explanation": "Transformers introduced self-attention, allowing models to process all positions in a sequence simultaneously and focus on relevant parts."
-                }
-            }
-        }
-        
-        # Get demo question or create fallback
-        if track in demo_questions and difficulty in demo_questions[track]:
-            demo = demo_questions[track][difficulty]
-            return {
-                'text': demo['question'],
-                'options': demo['options'],
-                'correct_answer': demo['correct_answer'],
-                'explanation': demo['explanation'],
-                'track': track,
-                'difficulty': difficulty,
-                'generated_by': 'Demo Mode',
-                'demo_mode': True
-            }
-        else:
-            return {
-                'text': f"What is an important concept in {self.available_tracks[track]}?",
-                'options': [
-                    "Correct answer option",
-                    "Incorrect option 1",
-                    "Incorrect option 2",
-                    "Incorrect option 3"
-                ],
-                'correct_answer': "Correct answer option",
-                'explanation': f"This is a {difficulty} level question about {self.available_tracks[track]}.",
-                'track': track,
-                'difficulty': difficulty,
-                'generated_by': 'Fallback',
-                'fallback': True
-            }
-    
-    def generate_question_set_with_crew(self, track: str, num_questions: int = 5, difficulty: str = "medium", use_crew: bool = True) -> List[Dict]:
-        """
-        Generate a set of questions using CrewAI agents
-        
-        Args:
-            track: Technology track
-            num_questions: Number of questions to generate
-            difficulty: Difficulty level
-            use_crew: Whether to use CrewAI agents
-        
-        Returns:
-            List of question dictionaries
-        """
+    def generate_question_set(self, track: str, num_questions: int, difficulty: str, use_ai: bool = True) -> List[Dict]:
+        """Generate a set of questions"""
         questions = []
-        progress_bar = st.progress(0)
         
         for i in range(num_questions):
-            if use_crew:
-                question = self.generate_question_with_crew(track, difficulty)
+            if use_ai and self.client and self.hf_token:
+                question = self.generate_with_ai(track, difficulty)
             else:
-                question = self._generate_with_flan_t5_fallback(track, difficulty)
+                question = self.get_demo_question(track, difficulty)
             
             questions.append(question)
-            progress_bar.progress((i + 1) / num_questions)
-            time.sleep(0.5)  # Small delay between generations
+            
+            # Show progress
+            progress = (i + 1) / num_questions
+            if 'progress_bar' in st.session_state:
+                st.session_state.progress_bar.progress(progress)
+            
+            time.sleep(0.5)  # Small delay
         
         return questions
 
-# Streamlit interface
 def main():
-    """Main function to run the Streamlit app"""
+    """Main Streamlit app"""
     st.set_page_config(
-        page_title="Enhanced MCQ Generator",
+        page_title="MCQ Generator",
         page_icon="🤖",
-        layout="wide",
-        initial_sidebar_state="expanded"
+        layout="wide"
     )
     
-    st.title("🤖 Enhanced MCQ Generator")
-    st.write("Generate technical interview questions using Google's FLAN-T5 and CrewAI agents")
+    st.title("🤖 MCQ Generator with FLAN-T5")
+    st.write("Generate technical interview questions using AI")
     
-    # Initialize session state
+    # Initialize generator
     if 'generator' not in st.session_state:
-        st.session_state.generator = EnhancedFlanT5MCQGenerator()
+        st.session_state.generator = SimpleMCQGenerator()
     
     generator = st.session_state.generator
     
-    # Sidebar configuration
+    # Sidebar
     with st.sidebar:
-        st.header("⚙️ Configuration")
+        st.header("⚙️ Settings")
         
-        # Model status
-        st.subheader("🔗 Connection Status")
+        # Connection status
         if generator.hf_token:
-            st.success("✅ Hugging Face Connected")
+            st.success("✅ AI Mode Active")
         else:
-            st.warning("⚠️ Demo Mode Active")
-            st.info("Add your Hugging Face token to secrets.toml for full functionality")
+            st.info("📋 Demo Mode Active")
+            st.caption("Add hf_token to secrets for AI generation")
         
-        # Generation method
-        st.subheader("🎯 Generation Method")
-        use_crewai = st.checkbox("Use CrewAI Agents", value=True, 
-                                help="Use collaborative AI agents for better question quality")
-        
-        if use_crewai:
-            st.success("🤖 CrewAI agents will collaborate")
-        else:
-            st.info("🔧 Direct FLAN-T5 generation")
+        # Options
+        use_ai = st.checkbox("Use AI Generation", value=bool(generator.hf_token))
+        if not generator.hf_token:
+            use_ai = False
     
     # Main interface
     col1, col2 = st.columns([2, 1])
@@ -490,103 +350,93 @@ def main():
     with col1:
         # Track selection
         track = st.selectbox(
-            "🎯 Select Technology Track:",
+            "Technology Track:",
             options=generator.get_available_tracks(),
-            format_func=lambda x: f"{x.upper()} - {generator.available_tracks[x]}"
+            format_func=lambda x: f"{x.upper()} - {generator.available_tracks[x].split('(')[0].strip()}"
         )
         
-        # Difficulty and quantity
+        # Difficulty and number
         col1_1, col1_2 = st.columns(2)
         with col1_1:
-            difficulty = st.radio(
-                "📊 Difficulty Level:",
-                options=["easy", "medium", "hard"],
-                horizontal=True,
-                help="Easy: Basic concepts, Medium: Practical application, Hard: Advanced topics"
-            )
-        
+            difficulty = st.selectbox("Difficulty:", ["easy", "medium", "hard"], index=1)
         with col1_2:
-            num_questions = st.slider(
-                "🔢 Number of Questions:",
-                min_value=1, max_value=10, value=3,
-                help="Number of questions to generate"
-            )
+            num_questions = st.number_input("Questions:", min_value=1, max_value=10, value=3)
     
     with col2:
-        st.subheader("📋 Quick Info")
-        st.info(f"**Track**: {track.upper()}")
-        st.info(f"**Difficulty**: {difficulty.capitalize()}")
-        st.info(f"**Questions**: {num_questions}")
-        if use_crewai:
-            st.success("**Mode**: CrewAI Enhanced")
+        st.subheader("📊 Summary")
+        st.info(f"**Track:** {track.upper()}")
+        st.info(f"**Level:** {difficulty.title()}")
+        st.info(f"**Count:** {num_questions}")
+        if use_ai:
+            st.success("**Mode:** AI")
         else:
-            st.warning("**Mode**: Direct Generation")
+            st.warning("**Mode:** Demo")
     
     # Generate button
-    st.divider()
-    if st.button("🚀 Generate Questions", use_container_width=True, type="primary"):
-        with st.spinner(f"🔄 Generating {num_questions} {difficulty} questions for {track}..."):
-            questions = generator.generate_question_set_with_crew(
+    if st.button("🚀 Generate Questions", type="primary", use_container_width=True):
+        with st.spinner("Generating questions..."):
+            # Create progress bar
+            st.session_state.progress_bar = st.progress(0)
+            
+            questions = generator.generate_question_set(
                 track=track,
-                num_questions=num_questions,
+                num_questions=num_questions, 
                 difficulty=difficulty,
-                use_crew=use_crewai
+                use_ai=use_ai
             )
             
-            # Store in session state
+            # Clear progress bar
+            st.session_state.progress_bar.empty()
+            del st.session_state.progress_bar
+            
+            # Store questions
             st.session_state.questions = questions
             
-            # Display success message
-            st.success(f"✅ Successfully generated {len(questions)} questions!")
+            st.success(f"✅ Generated {len(questions)} questions!")
     
     # Display questions
-    if 'questions' in st.session_state and st.session_state.questions:
+    if 'questions' in st.session_state:
         st.divider()
         st.header("📝 Generated Questions")
         
         for i, q in enumerate(st.session_state.questions, 1):
             with st.container():
-                st.subheader(f"Question {i}")
-                
-                # Question metadata
-                col_meta1, col_meta2, col_meta3 = st.columns(3)
-                with col_meta1:
-                    st.badge(f"Track: {q['track'].upper()}")
-                with col_meta2:
-                    st.badge(f"Difficulty: {q['difficulty'].upper()}")
-                with col_meta3:
-                    st.badge(f"Generated by: {q['generated_by']}")
+                # Question header
+                col_h1, col_h2, col_h3 = st.columns([2, 1, 1])
+                with col_h1:
+                    st.subheader(f"Question {i}")
+                with col_h2:
+                    st.badge(q['track'].upper())
+                with col_h3:
+                    st.badge(q['difficulty'].upper())
                 
                 # Question text
-                st.write("**Question:**")
-                st.write(q['text'])
+                st.write(f"**{q['text']}**")
                 
                 # Options
-                st.write("**Options:**")
                 for j, option in enumerate(q['options']):
-                    if option.strip():  # Only show non-empty options
-                        st.write(f"{chr(65+j)}) {option}")
+                    option_letter = chr(65 + j)
+                    if option == q['correct_answer']:
+                        st.success(f"✅ **{option_letter}) {option}**")
+                    else:
+                        st.write(f"{option_letter}) {option}")
                 
-                # Answer and explanation in expander
-                with st.expander("💡 Show Answer and Explanation"):
-                    st.success(f"**Correct Answer:** {q['correct_answer']}")
-                    st.info(f"**Explanation:** {q['explanation']}")
+                # Explanation
+                with st.expander("💡 Show Explanation"):
+                    st.info(q['explanation'])
+                    st.caption(f"Generated by: {q['generated_by']}")
                 
                 st.divider()
         
-        # Export option
-        if st.button("📥 Export Questions as JSON"):
-            questions_json = json.dumps(st.session_state.questions, indent=2)
+        # Export button
+        if st.button("📥 Export as JSON"):
+            questions_json = json.dumps(st.session_state.questions, indent=2, ensure_ascii=False)
             st.download_button(
-                label="⬇️ Download JSON",
+                label="⬇️ Download JSON File",
                 data=questions_json,
-                file_name=f"mcq_{track}_{difficulty}_{len(st.session_state.questions)}q.json",
+                file_name=f"mcq_{track}_{difficulty}_{len(st.session_state.questions)}.json",
                 mime="application/json"
             )
 
 if __name__ == "__main__":
-    # Initialize session state
-    if 'generator' not in st.session_state:
-        st.session_state.generator = None
-    
     main()
