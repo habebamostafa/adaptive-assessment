@@ -377,7 +377,7 @@ class RobustMCQGenerator:
             
             # Use a different model that's more likely to work
             response = self.client.text_generation(
-                model="microsoft/DialoGPT-small",  # Use a different model
+                model="google/flan-t5-large",  # Use a different model
                 prompt=prompt,
                 max_new_tokens=200,
                 temperature=0.7
