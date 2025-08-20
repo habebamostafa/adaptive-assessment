@@ -27,6 +27,7 @@ class FlanT5MCQGenerator:
         self.hf_token = st.secrets["token"]
         if hf_token:
             os.environ['token'] = hf_token
+            self.client = InferenceClient()
             try:
                 login(token=hf_token)
                 st.success("✅ تم تسجيل الدخول إلى Hugging Face بنجاح!")
@@ -107,7 +108,7 @@ class FlanT5MCQGenerator:
         try:
             # Call the Hugging Face API
             response = self.client.text_generation(
-                prompt=prompt,
+                inputs=prompt,
                 model="google/flan-t5-large",
                 max_new_tokens=500,
                 temperature=0.7,
