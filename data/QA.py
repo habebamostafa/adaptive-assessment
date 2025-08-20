@@ -1,14 +1,19 @@
 """
-Intelligent MCQ Generator using only prompt-based generation without pre-stored data
+Intelligent MCQ Generator using Google's FLAN-T5 with Hugging Face Token integration
 """
 
 import streamlit as st
+import requests
+from typing import List, Dict, Optional
+import json
 import random
 import time
+from huggingface_hub import InferenceClient, login
+import os
 
-class PurePromptMCQGenerator:
-    def __init__(self):
-        """Initialize the pure prompt-based MCQ generator"""
+class FlanT5MCQGenerator:
+    def __init__(self, hf_token: str = None):
+        """Initialize the MCQ generator with Hugging Face token"""
         self.available_tracks = {
             "web": "Web Development (HTML, CSS, JavaScript, React, etc.)",
             "ai": "Artificial Intelligence (Machine Learning, Deep Learning, NLP, etc.)",
@@ -18,13 +23,32 @@ class PurePromptMCQGenerator:
             "devops": "DevOps (Docker, Kubernetes, CI/CD, Cloud Computing, etc.)"
         }
         
-    def get_available_tracks(self) -> list:
+        # Set Hugging Face token
+        self.hf_token = st.secrets["token"]
+        if hf_token:
+            os.environ['token'] = hf_token
+            try:
+                login(token=hf_token)
+                st.success("✅ تم تسجيل الدخول إلى Hugging Face بنجاح!")
+            except Exception as e:
+                st.error(f"❌ خطأ في تسجيل الدخول: {e}")
+        
+        # Initialize Hugging Face Inference Client
+        self.client = None
+        if hf_token:
+            try:
+                self.client = InferenceClient()
+                st.success("✅ تم تهيئة عميل Hugging Face بنجاح!")
+            except Exception as e:
+                st.error(f"❌ خطأ في تهيئة العميل: {e}")
+    
+    def get_available_tracks(self) -> List[str]:
         """Get list of available technology tracks"""
         return list(self.available_tracks.keys())
     
-    def generate_question(self, track: str, difficulty: str = "medium") -> dict:
+    def generate_question_with_flan_t5(self, track: str, difficulty: str = "medium") -> Dict:
         """
-        Generate a question using only prompt-based logic
+        Generate a question using Google's FLAN-T5 model via Hugging Face
         
         Args:
             track: Technology track
@@ -33,194 +57,276 @@ class PurePromptMCQGenerator:
         Returns:
             Question dictionary
         """
-        # Generate question text based on track and difficulty
-        question_text = self._generate_question_text(track, difficulty)
+        try:
+            # Create a prompt for the FLAN-T5 model
+            prompt = self._create_flan_t5_prompt(track, difficulty)
+            
+            # Generate question using FLAN-T5
+            question_data = self._query_flan_t5(prompt)
+            
+            # Parse the response
+            return self._parse_flan_t5_response(question_data, track, difficulty)
+            
+        except Exception as e:
+            st.error(f"Error generating question with FLAN-T5: {e}")
+            return self._create_fallback_question(track, difficulty)
+    
+    def _create_flan_t5_prompt(self, track: str, difficulty: str) -> str:
+        """Create a prompt for FLAN-T5 model"""
+        track_description = self.available_tracks[track]
         
-        # Generate options
-        options, correct_answer = self._generate_options(track, difficulty)
+        prompt = f"""
+        Create a {difficulty} difficulty multiple choice question about {track_description}.
+        The question should be technical and appropriate for a job interview.
+        Provide the question text, four options (A, B, C, D), the correct answer, and a brief explanation.
         
-        # Generate explanation
-        explanation = self._generate_explanation(track, correct_answer)
+        Format your response as JSON with the following structure:
+        {{
+            "question": "question text here",
+            "options": {{
+                "A": "option A text",
+                "B": "option B text", 
+                "C": "option C text",
+                "D": "option D text"
+            }},
+            "correct_answer": "A",
+            "explanation": "brief explanation here"
+        }}
+        
+        Make sure the question is challenging and relevant to {track_description}.
+        """
+        
+        return prompt
+    
+    def _query_flan_t5(self, prompt: str) -> Dict:
+        """Query the FLAN-T5 model using Hugging Face Inference API"""
+        if not self.client or not self.hf_token:
+            st.warning("Using simulated response - add Hugging Face token for real API calls")
+            return self._simulate_flan_t5_response(prompt)
+        
+        try:
+            # Call the Hugging Face API
+            response = self.client.text_generation(
+                prompt=prompt,
+                model="google/flan-t5-large",
+                max_new_tokens=500,
+                temperature=0.7,
+                do_sample=True,
+                return_full_text=False
+            )
+            
+            # Try to extract JSON from the response
+            try:
+                # Find JSON part in the response
+                json_start = response.find('{')
+                json_end = response.rfind('}') + 1
+                if json_start >= 0 and json_end > json_start:
+                    json_str = response[json_start:json_end]
+                    return json.loads(json_str)
+                else:
+                    st.warning("Could not find JSON in response, using simulated response")
+                    return self._simulate_flan_t5_response(prompt)
+            except json.JSONDecodeError:
+                st.warning("Failed to parse JSON response, using simulated response")
+                return self._simulate_flan_t5_response(prompt)
+                
+        except Exception as e:
+            st.error(f"Error calling Hugging Face API: {e}")
+            return self._simulate_flan_t5_response(prompt)
+    
+    def _simulate_flan_t5_response(self, prompt: str) -> Dict:
+        """Simulate FLAN-T5 response for demonstration purposes"""
+        time.sleep(1)  # Simulate API call delay
+        
+        # Extract track and difficulty from prompt
+        if "easy" in prompt:
+            difficulty = "easy"
+        elif "hard" in prompt:
+            difficulty = "hard"
+        else:
+            difficulty = "medium"
+            
+        track = "web"
+        if "Artificial Intelligence" in prompt:
+            track = "ai"
+        elif "Cybersecurity" in prompt:
+            track = "cyber"
+        elif "Data Science" in prompt:
+            track = "data"
+        elif "Mobile Development" in prompt:
+            track = "mobile"
+        elif "DevOps" in prompt:
+            track = "devops"
+        
+        # Simulate different responses based on track and difficulty
+        responses = {
+            "web": {
+                "easy": {
+                    "question": "What does CSS stand for in web development?",
+                    "options": {
+                        "A": "Cascading Style Sheets",
+                        "B": "Computer Style System",
+                        "C": "Creative Style Solutions",
+                        "D": "Coded Styling Syntax"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "CSS stands for Cascading Style Sheets, which is used to style and layout web pages."
+                },
+                "medium": {
+                    "question": "What is the purpose of the Virtual DOM in React?",
+                    "options": {
+                        "A": "To improve performance by minimizing direct DOM manipulation",
+                        "B": "To create 3D visualizations in the browser",
+                        "C": "To provide virtual reality capabilities",
+                        "D": "To encrypt DOM elements for security"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "The Virtual DOM is a programming concept where a virtual representation of the UI is kept in memory and synced with the real DOM, making React efficient."
+                },
+                "hard": {
+                    "question": "How does Webpack's code splitting feature improve application performance?",
+                    "options": {
+                        "A": "By allowing lazy loading of code chunks when needed",
+                        "B": "By compressing all JavaScript files into a single bundle",
+                        "C": "By automatically minifying CSS and HTML files",
+                        "D": "By encrypting the source code for security"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "Code splitting allows Webpack to divide code into various bundles that can be loaded on demand or in parallel, improving initial load time."
+                }
+            },
+            "ai": {
+                "easy": {
+                    "question": "What is the primary goal of machine learning?",
+                    "options": {
+                        "A": "To enable computers to learn from data without explicit programming",
+                        "B": "To create artificial human intelligence",
+                        "C": "To replace human decision making entirely",
+                        "D": "To build robots that can perform physical tasks"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "Machine learning focuses on developing algorithms that allow computers to learn from and make predictions based on data."
+                },
+                "medium": {
+                    "question": "What is the difference between supervised and unsupervised learning?",
+                    "options": {
+                        "A": "Supervised learning uses labeled data, unsupervised learning finds patterns in unlabeled data",
+                        "B": "Supervised learning is faster than unsupervised learning",
+                        "C": "Unsupervised learning requires human supervision",
+                        "D": "Supervised learning is for classification, unsupervised for regression"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "Supervised learning uses labeled datasets to train algorithms, while unsupervised learning finds hidden patterns in unlabeled data."
+                },
+                "hard": {
+                    "question": "What is the transformer architecture's key innovation in natural language processing?",
+                    "options": {
+                        "A": "Self-attention mechanism that weights the importance of different words",
+                        "B": "Using convolutional layers for text processing",
+                        "C": "Implementing reinforcement learning for text generation",
+                        "D": "Combining vision and language models in a single architecture"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "The transformer architecture introduced the self-attention mechanism, which allows the model to focus on different parts of the input sequence when processing each word."
+                }
+            },
+            "cyber": {
+                "easy": {
+                    "question": "What is the purpose of a firewall in network security?",
+                    "options": {
+                        "A": "To monitor and control incoming and outgoing network traffic",
+                        "B": "To encrypt all data passing through a network",
+                        "C": "To prevent physical access to network devices",
+                        "D": "To create backups of important data"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "A firewall is a network security device that monitors and filters incoming and outgoing network traffic based on an organization's security policies."
+                },
+                "medium": {
+                    "question": "What is the difference between symmetric and asymmetric encryption?",
+                    "options": {
+                        "A": "Symmetric uses one key, asymmetric uses a public/private key pair",
+                        "B": "Symmetric is faster but less secure than asymmetric",
+                        "C": "Asymmetric is used for SSL/TLS, symmetric for hashing",
+                        "D": "Symmetric is for encryption, asymmetric for digital signatures only"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "Symmetric encryption uses the same key for encryption and decryption, while asymmetric encryption uses a pair of public and private keys."
+                },
+                "hard": {
+                    "question": "How does a zero-day vulnerability differ from other security vulnerabilities?",
+                    "options": {
+                        "A": "It is unknown to the software vendor and has no available patch",
+                        "B": "It affects systems with zero days of uptime",
+                        "C": "It can only be exploited at midnight (zero hour)",
+                        "D": "It requires zero user interaction to exploit"
+                    },
+                    "correct_answer": "A",
+                    "explanation": "A zero-day vulnerability is a software vulnerability that is unknown to the vendor or has no patch available, making it particularly dangerous."
+                }
+            }
+        }
+        
+        # Return appropriate response based on track and difficulty
+        if track in responses and difficulty in responses[track]:
+            return responses[track][difficulty]
+        else:
+            # Fallback response
+            return {
+                "question": f"What is a key concept in {self.available_tracks[track]}?",
+                "options": {
+                    "A": "Correct answer",
+                    "B": "Incorrect option 1",
+                    "C": "Incorrect option 2",
+                    "D": "Incorrect option 3"
+                },
+                "correct_answer": "A",
+                "explanation": f"This is a {difficulty} level question about {self.available_tracks[track]}."
+            }
+    
+    def _parse_flan_t5_response(self, response_data: Dict, track: str, difficulty: str) -> Dict:
+        """Parse the response from FLAN-T5 into our question format"""
+        if not response_data:
+            return self._create_fallback_question(track, difficulty)
+        
+        # Convert options from object to list
+        options_dict = response_data.get("options", {})
+        options_list = [options_dict.get("A", ""), options_dict.get("B", ""), 
+                       options_dict.get("C", ""), options_dict.get("D", "")]
+        
+        # Get correct answer text
+        correct_key = response_data.get("correct_answer", "A")
+        correct_answer_text = options_dict.get(correct_key, options_list[0])
         
         return {
-            'text': question_text,
-            'options': options,
-            'correct_answer': correct_answer,
-            'explanation': explanation,
+            'text': response_data.get("question", f"What is a key concept in {self.available_tracks[track]}?"),
+            'options': options_list,
+            'correct_answer': correct_answer_text,
+            'explanation': response_data.get("explanation", f"This is a {difficulty} level question about {self.available_tracks[track]}."),
             'track': track,
             'difficulty': difficulty,
             'generated': True
         }
     
-    def _generate_question_text(self, track: str, difficulty: str) -> str:
-        """Generate question text using prompt logic"""
-        track_name = self.available_tracks[track]
-        
-        question_types = {
-            "easy": [
-                f"What is the basic purpose of {{topic}} in {track_name}?",
-                f"Which of these is a fundamental concept of {{topic}} in {track_name}?",
-                f"How does {{topic}} work at a basic level in {track_name}?",
-                f"Why is {{topic}} important for beginners in {track_name}?"
+    def _create_fallback_question(self, track: str, difficulty: str) -> Dict:
+        """Create a fallback question if generation fails"""
+        return {
+            'text': f"What is a {difficulty} level concept in {self.available_tracks[track]}?",
+            'options': [
+                "Correct answer",
+                "Incorrect option 1",
+                "Incorrect option 2", 
+                "Incorrect option 3"
             ],
-            "medium": [
-                f"Which statement best describes {{topic}} in {track_name}?",
-                f"How would you implement {{topic}} in a real {track_name} project?",
-                f"What is the primary advantage of using {{topic}} in {track_name}?",
-                f"Which approach is most effective for {{topic}} in {track_name}?"
-            ],
-            "hard": [
-                f"What are the advanced considerations when working with {{topic}} in {track_name}?",
-                f"How would you optimize {{topic}} for enterprise-level {track_name} applications?",
-                f"What challenges might you encounter when implementing {{topic}} in complex {track_name} systems?",
-                f"Which advanced technique is most appropriate for {{topic}} in high-performance {track_name} applications?"
-            ]
+            'correct_answer': "Correct answer",
+            'explanation': f"This is a {difficulty} level question about {self.available_tracks[track]}.",
+            'track': track,
+            'difficulty': difficulty,
+            'generated': True,
+            'fallback': True
         }
-        
-        # Select topics based on track and difficulty
-        topics = self._get_topics(track, difficulty)
-        topic = random.choice(topics)
-        
-        # Select question template
-        template = random.choice(question_types[difficulty])
-        
-        return template.format(topic=topic)
     
-    def _get_topics(self, track: str, difficulty: str) -> list:
-        """Get relevant topics for a track and difficulty"""
-        topics = {
-            "web": {
-                "easy": ["HTML", "CSS", "JavaScript", "responsive design", "DOM manipulation"],
-                "medium": ["React", "API integration", "state management", "CSS frameworks", "routing"],
-                "hard": ["performance optimization", "WebAssembly", "Progressive Web Apps", "server-side rendering", "advanced security"]
-            },
-            "ai": {
-                "easy": ["machine learning", "neural networks", "data preprocessing", "model training", "basic algorithms"],
-                "medium": ["CNN", "RNN", "transfer learning", "hyperparameter tuning", "model evaluation"],
-                "hard": ["transformers", "GANs", "reinforcement learning", "explainable AI", "advanced optimization"]
-            },
-            "cyber": {
-                "easy": ["encryption", "firewalls", "authentication", "basic security protocols", "password management"],
-                "medium": ["penetration testing", "cryptographic protocols", "incident response", "vulnerability assessment", "network security"],
-                "hard": ["zero-day exploits", "advanced persistent threats", "quantum cryptography", "reverse engineering", "threat intelligence"]
-            },
-            "data": {
-                "easy": ["data cleaning", "basic statistics", "data visualization", "SQL queries", "data types"],
-                "medium": ["feature engineering", "regression models", "clustering algorithms", "time series analysis", "data pipelines"],
-                "hard": ["deep learning", "big data architectures", "MLOps", "advanced statistical modeling", "real-time analytics"]
-            },
-            "mobile": {
-                "easy": ["UI components", "app structure", "platform differences", "user interactions", "basic layouts"],
-                "medium": ["state management", "native modules", "performance optimization", "offline capabilities", "device APIs"],
-                "hard": ["advanced animations", "cross-platform challenges", "security implementations", "low-level optimizations", "custom components"]
-            },
-            "devops": {
-                "easy": ["version control", "CI/CD", "containers", "cloud basics", "basic automation"],
-                "medium": ["infrastructure as code", "orchestration", "monitoring", "deployment strategies", "configuration management"],
-                "hard": ["chaos engineering", "gitops", "service mesh", "advanced security", "scalability solutions"]
-            }
-        }
-        
-        return topics[track][difficulty]
-    
-    def _generate_options(self, track: str, difficulty: str) -> tuple:
-        """Generate options for a question"""
-        # Correct answer patterns
-        correct_patterns = {
-            "web": [
-                "It provides structure and semantics to web content",
-                "It enables dynamic styling and responsive layouts",
-                "It adds interactivity and client-side functionality",
-                "It facilitates component-based UI development",
-                "It ensures cross-browser compatibility"
-            ],
-            "ai": [
-                "It enables machines to learn from data without explicit programming",
-                "It processes and analyzes complex patterns in large datasets",
-                "It mimics human cognitive functions for problem solving",
-                "It optimizes decision-making processes through algorithms",
-                "It extracts meaningful insights from raw information"
-            ],
-            "cyber": [
-                "It protects systems and data from unauthorized access and attacks",
-                "It ensures confidentiality, integrity and availability of information",
-                "It identifies and mitigates potential security vulnerabilities",
-                "It establishes trust and compliance in digital operations",
-                "It monitors and responds to security incidents in real-time"
-            ],
-            "data": [
-                "It extracts meaningful insights from raw information",
-                "It transforms, analyzes and visualizes complex datasets",
-                "It supports data-driven decision making through analysis",
-                "It manages and processes large volumes of structured and unstructured data",
-                "It builds predictive models from historical data patterns"
-            ],
-            "mobile": [
-                "It creates native experiences optimized for mobile devices",
-                "It enables cross-platform development with shared codebase",
-                "It implements touch-friendly interfaces and mobile-specific features",
-                "It manages device resources efficiently for optimal performance",
-                "It ensures app security and data protection on mobile platforms"
-            ],
-            "devops": [
-                "It automates and streamlines development and operations processes",
-                "It enables continuous integration and delivery of software",
-                "It ensures reliable and scalable infrastructure management",
-                "It bridges development and operations for faster delivery",
-                "It implements monitoring and alerting for system reliability"
-            ]
-        }
-        
-        # Incorrect answer patterns
-        incorrect_patterns = [
-            "It handles server-side business logic and database operations",
-            "It manages network protocols and data transmission",
-            "It optimizes hardware performance and resource allocation",
-            "It implements cryptographic security algorithms",
-            "It designs user interfaces and experience flows",
-            "It manages database transactions and data persistence",
-            "It configures network infrastructure and security policies",
-            "It develops compilers and low-level system utilities",
-            "It designs user experience and interface elements",
-            "It develops application features and functionality",
-            "It manages cloud storage and data backup solutions",
-            "It optimizes database queries and performance",
-            "It implements user authentication and authorization systems",
-            "It develops mobile application interfaces and interactions",
-            "It configures network routers and switching infrastructure",
-            "It designs graphical assets and visual branding elements",
-            "It implements server-side API endpoints and business logic",
-            "It configures network security policies and firewall rules",
-            "It designs database schemas and optimization strategies",
-            "It develops operating system kernels and low-level drivers"
-        ]
-        
-        # Select one correct option
-        correct_answer = random.choice(correct_patterns[track])
-        
-        # Select three incorrect options
-        incorrect_options = random.sample(incorrect_patterns, 3)
-        
-        # Combine and shuffle options
-        options = [correct_answer] + incorrect_options
-        random.shuffle(options)
-        
-        return options, correct_answer
-    
-    def _generate_explanation(self, track: str, correct_answer: str) -> str:
-        """Generate explanation for the correct answer"""
-        explanations = {
-            "web": f"{correct_answer} is correct because it represents a core principle of web development that ensures effective, responsive, and secure web applications.",
-            "ai": f"{correct_answer} is the right choice as it aligns with fundamental AI concepts that enable machines to learn, reason, and solve complex problems.",
-            "cyber": f"In cybersecurity, {correct_answer} is essential for protecting digital assets, preventing unauthorized access, and maintaining system integrity.",
-            "data": f"For data science, {correct_answer} correctly describes processes for extracting insights, building models, and supporting data-driven decisions.",
-            "mobile": f"In mobile development, {correct_answer} addresses key considerations for creating performant, user-friendly, and platform-appropriate applications.",
-            "devops": f"The DevOps practice confirms {correct_answer} as critical for automating workflows, ensuring reliability, and accelerating software delivery."
-        }
-        
-        return explanations.get(track, f"{correct_answer} is the correct answer because it best addresses the question based on established principles and practices.")
-    
-    def generate_question_set(self, track: str, num_questions: int = 5, difficulty: str = "medium") -> list:
+    def generate_question_set(self, track: str, num_questions: int = 5, difficulty: str = "medium") -> List[Dict]:
         """
         Generate a set of questions for a track
         
@@ -234,22 +340,33 @@ class PurePromptMCQGenerator:
         """
         questions = []
         for i in range(num_questions):
-            question = self.generate_question(track, difficulty)
+            question = self.generate_question_with_flan_t5(track, difficulty)
             questions.append(question)
-            # Small delay to simulate processing
-            time.sleep(0.1)
+            # Small delay to simulate API call
+            time.sleep(0.5)
         
         return questions
 
 # Streamlit interface
 def main():
     """Main function to run the Streamlit app"""
-    st.title("🤖 Pure Prompt MCQ Generator")
-    st.write("Generate technical interview questions using pure prompt-based generation (no pre-stored data)")
+    st.title("🤖 FLAN-T5 MCQ Generator with Hugging Face Token")
+    st.write("Generate technical interview questions using Google's FLAN-T5 model with your Hugging Face token")
+    
+    # Hugging Face Token input
+    hf_token = st.text_input(
+        "Enter your Hugging Face Token:",
+        type="password",
+        help="Get your token from https://huggingface.co/settings/tokens"
+    )
     
     # Initialize generator
-    if 'generator' not in st.session_state:
-        st.session_state.generator = PurePromptMCQGenerator()
+    if 'generator' not in st.session_state or st.session_state.get('current_token') != hf_token:
+        if hf_token:
+            st.session_state.generator = FlanT5MCQGenerator(hf_token)
+            st.session_state.current_token = hf_token
+        else:
+            st.session_state.generator = FlanT5MCQGenerator()
     
     generator = st.session_state.generator
     
@@ -268,28 +385,31 @@ def main():
     )
     
     # Number of questions
-    num_questions = st.slider("Number of questions to generate:", 1, 10, 5)
+    num_questions = st.slider("Number of questions to generate:", 1, 10, 3)
     
     # Generate button
-    if st.button("Generate Questions"):
-        with st.spinner(f"Generating {num_questions} {difficulty} questions for {track}..."):
-            questions = generator.generate_question_set(track, num_questions, difficulty)
-            
-            # Display questions
-            for i, q in enumerate(questions, 1):
-                st.subheader(f"Question {i}")
-                st.write(q['text'])
+    if st.button("Generate Questions with FLAN-T5"):
+        if not hf_token:
+            st.warning("⚠️ Please enter your Hugging Face token to generate questions")
+        else:
+            with st.spinner(f"Generating {num_questions} {difficulty} questions for {track} using FLAN-T5..."):
+                questions = generator.generate_question_set(track, num_questions, difficulty)
                 
-                # Display options
-                for j, option in enumerate(q['options']):
-                    st.write(f"{chr(65+j)}) {option}")
-                
-                # Add expander for answer and explanation
-                with st.expander("Show Answer and Explanation"):
-                    st.success(f"Correct answer: {q['correct_answer']}")
-                    st.info(f"Explanation: {q['explanation']}")
-                
-                st.divider()
+                # Display questions
+                for i, q in enumerate(questions, 1):
+                    st.subheader(f"Question {i}")
+                    st.write(q['text'])
+                    
+                    # Display options
+                    for j, option in enumerate(q['options']):
+                        st.write(f"{chr(65+j)}) {option}")
+                    
+                    # Add expander for answer and explanation
+                    with st.expander("Show Answer and Explanation"):
+                        st.success(f"Correct answer: {q['correct_answer']}")
+                        st.info(f"Explanation: {q['explanation']}")
+                    
+                    st.divider()
 
 if __name__ == "__main__":
     main()
