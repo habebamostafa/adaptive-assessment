@@ -25,9 +25,7 @@ class FlanT5MCQGenerator:
         
         # Set Hugging Face token
         self.hf_token = st.secrets["token"]
-        os.environ['HUGGINGFACEHUB_API_TOKEN'] = self.hf_token
         
-
     def get_available_tracks(self) -> List[str]:
         """Get list of available technology tracks"""
         return list(self.available_tracks.keys())
