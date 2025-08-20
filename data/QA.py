@@ -1,8 +1,3 @@
-"""
-MCQ Generator - Robust API Version
-Enhanced error handling and multiple API approaches
-"""
-
 import streamlit as st
 import json
 import time
@@ -89,12 +84,11 @@ class RobustMCQGenerator:
         try:
             self.client = InferenceClient(token=self.hf_token)
             
-            # Simple test call
+            # Simple test call - REMOVED TIMEOUT PARAMETER
             test_response = self.client.text_generation(
                 model="google/flan-t5-small",  # Use smallest model for testing
                 prompt="Hello",
-                max_new_tokens=5,
-                timeout=10
+                max_new_tokens=5
             )
             return True
         except Exception as e:
@@ -376,12 +370,12 @@ class RobustMCQGenerator:
         try:
             prompt = self._create_simple_prompt(track, difficulty)
             
+            # REMOVED TIMEOUT PARAMETER
             response = self.client.text_generation(
                 model="google/flan-t5-small",  # Use smaller, more reliable model
                 prompt=prompt,
                 max_new_tokens=200,
-                temperature=0.7,
-                timeout=15
+                temperature=0.7
             )
             
             response_text = self._extract_response_text(response)
@@ -431,19 +425,18 @@ class RobustMCQGenerator:
     def _create_simple_prompt(self, track: str, difficulty: str) -> str:
         """Create a simple, effective prompt"""
         return f"""Create a {difficulty} level multiple choice question about {self.available_tracks[track]}.
+            Format:
+            Question: [your question]
+            A) [option 1]
+            B) [option 2]  
+            C) [option 3]
+            D) [option 4]
+            Answer: [A/B/C/D]
+            Explanation: [brief explanation]
 
-Format:
-Question: [your question]
-A) [option 1]
-B) [option 2]  
-C) [option 3]
-D) [option 4]
-Answer: [A/B/C/D]
-Explanation: [brief explanation]
-
-Topic: {self.available_tracks[track]}
-Level: {difficulty}
-"""
+            Topic: {self.available_tracks[track]}
+            Level: {difficulty}
+            """
     
     def _extract_response_text(self, response) -> str:
         """Extract text from various response formats"""
