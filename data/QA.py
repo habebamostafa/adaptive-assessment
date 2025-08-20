@@ -308,8 +308,6 @@ class SimpleMCQGenerator:
             # Try multiple models in order of preference
             models_to_try = [
                 "google/flan-t5-large",
-                "google/flan-t5-base",
-                "microsoft/DialoGPT-medium"
             ]
             
             response_text = None
