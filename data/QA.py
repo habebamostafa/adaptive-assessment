@@ -213,8 +213,13 @@ class SimpleMCQGenerator:
                 do_sample=True,
                 return_full_text=False
             )
-            generated_text = response[0]['generated_text']
-            
+            if isinstance(response, list) and "generated_text" in response[0]:
+                generated_text = response[0]["generated_text"]
+                return self._parse_response(generated_text, track, difficulty)
+            else:
+                st.warning("⚠️ لم يتم توليد نص صحيح من AI، استخدام الأسئلة التجريبية")
+                return self.get_demo_question(track, difficulty)
+                    
             return self._parse_response(generated_text,response, track, difficulty)
             
         except Exception as e:
