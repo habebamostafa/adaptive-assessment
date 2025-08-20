@@ -306,43 +306,38 @@ class SimpleMCQGenerator:
             prompt = self._create_prompt(track, difficulty)
             
             # Try multiple models in order of preference
-            models_to_try = [
-                "google/flan-t5-large",
-            ]
+
             
             response_text = None
             used_model = None
-            
-            for model in models_to_try:
-                try:
-                    st.info(f"🔄 Trying model: {model}")
+            model="google/flan-t5-large"
+            try:
+                st.info(f"🔄 Trying model: {model}")
+                
+                response = self.client.text_generation(
+                    model=model,
+                    prompt=prompt,
+                    max_new_tokens=400,
+                    temperature=0.7,
+                    do_sample=True
+                )
+                
+                # Handle different response formats
+                if isinstance(response, str):
+                    response_text = response
+                elif isinstance(response, dict) and "generated_text" in response:
+                    response_text = response["generated_text"]
+                elif isinstance(response, list) and len(response) > 0:
+                    if isinstance(response[0], dict) and "generated_text" in response[0]:
+                        response_text = response[0]["generated_text"]
+                    elif isinstance(response[0], str):
+                        response_text = response[0]
+                
+                if response_text:
+                    used_model = model
                     
-                    response = self.client.text_generation(
-                        model=model,
-                        prompt=prompt,
-                        max_new_tokens=400,
-                        temperature=0.7,
-                        do_sample=True
-                    )
-                    
-                    # Handle different response formats
-                    if isinstance(response, str):
-                        response_text = response
-                    elif isinstance(response, dict) and "generated_text" in response:
-                        response_text = response["generated_text"]
-                    elif isinstance(response, list) and len(response) > 0:
-                        if isinstance(response[0], dict) and "generated_text" in response[0]:
-                            response_text = response[0]["generated_text"]
-                        elif isinstance(response[0], str):
-                            response_text = response[0]
-                    
-                    if response_text:
-                        used_model = model
-                        break
-                        
-                except Exception as model_error:
-                    st.warning(f"⚠️ Model {model} failed: {str(model_error)[:100]}...")
-                    continue
+            except Exception as model_error:
+                st.warning(f"⚠️ Model {model} failed: {str(model_error)[:100]}...")
             
             if response_text:
                 st.success(f"✅ Successfully generated with {used_model}")
