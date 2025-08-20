@@ -365,9 +365,6 @@ def main():
     
     # Generate button
     if st.button("Generate Questions with FLAN-T5"):
-        if not hf_token:
-            st.warning("⚠️ Please enter your Hugging Face token to generate questions")
-        else:
             with st.spinner(f"Generating {num_questions} {difficulty} questions for {track} using FLAN-T5..."):
                 questions = generator.generate_question_set(track, num_questions, difficulty)
                 
