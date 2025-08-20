@@ -9,6 +9,8 @@ import json
 import random
 import time
 from typing import List, Dict, Optional
+from huggingface_hub import InferenceClient
+
 import os
 
 try:
@@ -201,17 +203,16 @@ class SimpleMCQGenerator:
         """Generate question using AI (FLAN-T5)"""
         if not self.client or not self.hf_token:
             return self.get_demo_question(track, difficulty)
-        
+        client = InferenceClient(token=self.hf_token)
         try:
             prompt = self._create_prompt(track, difficulty)
             
-            response = self.client.text_generation(
+            response = client.text_generation(
                 model="google/flan-t5-large",
-                prompt=prompt,          # النص هنا
+                input=prompt,
                 max_new_tokens=400,
                 temperature=0.7,
-                do_sample=True,
-                return_full_text=False
+                do_sample=True
             )
             if isinstance(response, list) and "generated_text" in response[0]:
                 generated_text = response[0]["generated_text"]
