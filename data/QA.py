@@ -340,20 +340,8 @@ def main():
     st.write("Generate technical interview questions using Google's FLAN-T5 model with your Hugging Face token")
     
     # Hugging Face Token input
-    hf_token = st.text_input(
-        "Enter your Hugging Face Token:",
-        type="password",
-        help="Get your token from https://huggingface.co/settings/tokens"
-    )
-    
+
     # Initialize generator
-    if 'generator' not in st.session_state or st.session_state.get('current_token') != hf_token:
-        if hf_token:
-            st.session_state.generator = FlanT5MCQGenerator(hf_token)
-            st.session_state.current_token = hf_token
-        else:
-            st.session_state.generator = FlanT5MCQGenerator()
-    
     generator = st.session_state.generator
     
     # Track selection
