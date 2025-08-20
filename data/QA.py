@@ -95,10 +95,12 @@ class FlanT5MCQGenerator:
             response = self.client.text_generation(
                 inputs=prompt,
                 model="google/flan-t5-large",
-                max_new_tokens=500,
-                temperature=0.7,
-                do_sample=True,
-                return_full_text=False
+                parameters={
+                "max_new_tokens": 500,
+                "temperature": 0.7,
+                "do_sample": True
+            }
+
             )
             
             # Try to extract JSON from the response
