@@ -1,14 +1,12 @@
 """
-Enhanced MCQ Generator using Google's FLAN-T5 with Hugging Face Token
-Fixed and Improved Version
+Simple MCQ Generator - Streamlined Version
+Focuses on reliability and basic functionality
 """
 
 import streamlit as st
-import requests
 import json
-import random
 import time
-from typing import List, Dict, Optional
+from typing import List, Dict
 import re
 
 # Try importing Hugging Face Hub
@@ -18,7 +16,7 @@ try:
 except ImportError:
     HF_AVAILABLE = False
 
-class SimpleMCQGenerator:
+class MCQGenerator:
     def __init__(self):
         """Initialize the MCQ generator"""
         self.available_tracks = {
@@ -32,720 +30,392 @@ class SimpleMCQGenerator:
             "frontend": "Frontend Development (UI/UX, Responsive Design)"
         }
         
-        # Initialize Hugging Face client
         self.hf_token = None
         self.client = None
         self._setup_hugging_face()
     
     def _setup_hugging_face(self):
-        """Setup Hugging Face connection with better error handling"""
+        """Setup Hugging Face connection"""
         if not HF_AVAILABLE:
-            st.warning("⚠️ Hugging Face Hub not available. Install with: pip install huggingface-hub")
+            st.info("📋 Hugging Face not available - using demo mode")
             return
             
+        # Try to get token from different sources
         try:
-            # Get token from multiple sources
-            self.hf_token = None
-            
-            # Try Streamlit secrets first
+            # From Streamlit secrets
             if hasattr(st, 'secrets'):
-                try:
-                    self.hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("hf_token")
-                except:
-                    pass
+                self.hf_token = st.secrets.get("HF_TOKEN") or st.secrets.get("hf_token")
             
-            # Try environment variable as backup
+            # From environment
             if not self.hf_token:
                 import os
                 self.hf_token = os.getenv("HF_TOKEN") or os.getenv("HUGGINGFACE_TOKEN")
             
             if self.hf_token:
-                # Test the token by creating a client
                 self.client = InferenceClient(token=self.hf_token)
-                # Try a simple API call to validate
-                try:
-                    # Test with a lightweight model first
-                    test_response = self.client.text_generation(
-                        model="google/flan-t5-base",  # Using base model for testing
-                        prompt="Test",
-                        max_new_tokens=5
-                    )
-                    st.success("✅ Hugging Face connected and validated!")
-                except Exception as test_error:
-                    st.warning(f"⚠️ Token found but API test failed: {str(test_error)[:100]}...")
-                    # Keep the client anyway, might work for actual requests
+                st.success("✅ AI Mode Ready!")
             else:
-                st.info("ℹ️ No Hugging Face token found. Using demo mode.")
-                st.info("💡 To enable AI generation, add your HF token to Streamlit secrets or environment variables")
+                st.info("📋 No HF token found - using demo mode")
                 
         except Exception as e:
-            st.error(f"❌ Hugging Face setup failed: {str(e)[:200]}...")
-            self.client = None
+            st.warning(f"⚠️ HF setup issue: {str(e)[:100]}")
     
-    def get_available_tracks(self) -> List[str]:
-        """Get list of available technology tracks"""
-        return list(self.available_tracks.keys())
-    
-    def get_demo_question(self, track: str, difficulty: str) -> Dict:
-        """Get a demo question for the specified track and difficulty"""
-        demo_questions = {
+    def get_demo_questions(self) -> Dict[str, Dict[str, Dict]]:
+        """Comprehensive demo questions database"""
+        return {
             "web": {
                 "easy": {
-                    "question": "What does HTML stand for?",
+                    "question": "What does CSS stand for?",
                     "options": [
-                        "HyperText Markup Language",
-                        "High Tech Modern Language", 
-                        "Home Tool Markup Language",
-                        "Hyperlink Text Management Language"
+                        "Cascading Style Sheets",
+                        "Computer Style Sheets",
+                        "Creative Style Sheets", 
+                        "Colorful Style Sheets"
                     ],
-                    "correct_answer": "HyperText Markup Language",
-                    "explanation": "HTML stands for HyperText Markup Language, the standard markup language for creating web pages and web applications."
+                    "correct_answer": "Cascading Style Sheets",
+                    "explanation": "CSS stands for Cascading Style Sheets, used to describe the presentation of HTML documents."
                 },
                 "medium": {
-                    "question": "What is the primary benefit of React's Virtual DOM?",
+                    "question": "What is the main advantage of using React hooks?",
                     "options": [
-                        "Optimizes rendering by minimizing DOM operations",
-                        "Provides direct database connectivity",
-                        "Automatically generates CSS styles",
-                        "Enables server-side rendering only"
+                        "Use state and lifecycle methods in functional components",
+                        "Automatically optimize performance",
+                        "Replace all class components",
+                        "Handle routing automatically"
                     ],
-                    "correct_answer": "Optimizes rendering by minimizing DOM operations",
-                    "explanation": "Virtual DOM creates a virtual representation of the UI in memory and efficiently updates only the parts of the real DOM that have changed, improving performance."
+                    "correct_answer": "Use state and lifecycle methods in functional components",
+                    "explanation": "React hooks allow functional components to use state and other React features without writing a class."
                 },
                 "hard": {
-                    "question": "How does webpack's tree shaking optimize bundle size?",
+                    "question": "What is the purpose of webpack's code splitting?",
                     "options": [
-                        "Eliminates unused code through static analysis",
-                        "Compresses images automatically",
-                        "Minifies CSS files only",
-                        "Removes HTML comments"
+                        "Split code into smaller bundles loaded on demand",
+                        "Separate CSS from JavaScript",
+                        "Divide development from production code",
+                        "Split frontend from backend code"
                     ],
-                    "correct_answer": "Eliminates unused code through static analysis",
-                    "explanation": "Tree shaking removes dead code by analyzing ES6 module imports/exports during build time, eliminating unused functions and variables."
+                    "correct_answer": "Split code into smaller bundles loaded on demand",
+                    "explanation": "Code splitting allows you to split your code into various bundles which can be loaded on demand or in parallel, improving performance."
                 }
             },
             "ai": {
                 "easy": {
-                    "question": "What is the main goal of machine learning?",
+                    "question": "What type of learning uses labeled training data?",
                     "options": [
-                        "Enable computers to learn from data automatically",
-                        "Create human-like robots only",
-                        "Replace all human workers",
-                        "Process images exclusively"
+                        "Supervised learning",
+                        "Unsupervised learning",
+                        "Reinforcement learning",
+                        "Deep learning"
                     ],
-                    "correct_answer": "Enable computers to learn from data automatically",
-                    "explanation": "Machine learning enables computers to automatically learn and improve their performance on tasks through experience with data, without being explicitly programmed for each specific task."
+                    "correct_answer": "Supervised learning",
+                    "explanation": "Supervised learning uses labeled examples to train models to make predictions on new, unseen data."
                 },
                 "medium": {
-                    "question": "What distinguishes supervised from unsupervised learning?",
+                    "question": "What is the vanishing gradient problem in deep neural networks?",
                     "options": [
-                        "Supervised uses labeled data, unsupervised finds patterns in unlabeled data",
-                        "Supervised is always faster than unsupervised",
-                        "Unsupervised requires constant human oversight",
-                        "Supervised only works with image data"
+                        "Gradients become very small in early layers during backpropagation",
+                        "The model fails to learn any patterns",
+                        "Training data becomes corrupted",
+                        "The loss function stops working"
                     ],
-                    "correct_answer": "Supervised uses labeled data, unsupervised finds patterns in unlabeled data",
-                    "explanation": "Supervised learning learns from labeled training examples to make predictions, while unsupervised learning discovers hidden patterns and structures in unlabeled data."
+                    "correct_answer": "Gradients become very small in early layers during backpropagation",
+                    "explanation": "The vanishing gradient problem occurs when gradients become exponentially smaller as they propagate back through the network, making it difficult to train early layers."
                 },
                 "hard": {
-                    "question": "What is the key innovation of Transformer architecture in deep learning?",
+                    "question": "What is the key innovation of attention mechanisms in neural networks?",
                     "options": [
-                        "Self-attention mechanism for parallel sequence processing",
-                        "Convolutional layers optimized for text processing",
-                        "Recurrent connections for enhanced memory",
-                        "Direct reinforcement learning integration"
+                        "Allow models to focus on relevant parts of input sequences",
+                        "Reduce computational complexity to linear time",
+                        "Eliminate the need for training data",
+                        "Automatically generate new data samples"
                     ],
-                    "correct_answer": "Self-attention mechanism for parallel sequence processing",
-                    "explanation": "Transformers introduced the self-attention mechanism that allows the model to process all positions in a sequence simultaneously, enabling better parallelization and long-range dependency modeling."
+                    "correct_answer": "Allow models to focus on relevant parts of input sequences",
+                    "explanation": "Attention mechanisms enable models to dynamically focus on different parts of the input sequence when producing each part of the output, improving performance on long sequences."
                 }
             },
             "cyber": {
                 "easy": {
-                    "question": "What is a firewall's primary function in network security?",
+                    "question": "What is phishing in cybersecurity?",
                     "options": [
-                        "Control network traffic based on security rules",
-                        "Encrypt all hard drive data automatically",
-                        "Prevent physical access to devices",
-                        "Create automated data backups"
+                        "Fraudulent attempts to obtain sensitive information",
+                        "A type of malware that encrypts files",
+                        "A method of network monitoring",
+                        "A firewall configuration technique"
                     ],
-                    "correct_answer": "Control network traffic based on security rules",
-                    "explanation": "A firewall monitors and filters incoming and outgoing network traffic based on predetermined security rules to protect against unauthorized access."
+                    "correct_answer": "Fraudulent attempts to obtain sensitive information",
+                    "explanation": "Phishing is a social engineering attack where attackers impersonate trusted entities to steal sensitive information like passwords or credit card numbers."
                 },
                 "medium": {
-                    "question": "What's the main difference between symmetric and asymmetric encryption?",
+                    "question": "What is the difference between authentication and authorization?",
                     "options": [
-                        "Symmetric uses one key, asymmetric uses public/private key pairs",
-                        "Symmetric encryption is always more secure",
-                        "Asymmetric encryption is only used for SSL/TLS",
-                        "Symmetric encryption only works with text data"
+                        "Authentication verifies identity, authorization controls access",
+                        "Authentication controls access, authorization verifies identity",
+                        "They are the same concept",
+                        "Authentication is for users, authorization is for systems"
                     ],
-                    "correct_answer": "Symmetric uses one key, asymmetric uses public/private key pairs",
-                    "explanation": "Symmetric encryption uses the same key for both encryption and decryption, while asymmetric encryption uses mathematically related public and private key pairs."
+                    "correct_answer": "Authentication verifies identity, authorization controls access",
+                    "explanation": "Authentication confirms who you are (identity verification), while authorization determines what you can access (permission control)."
                 },
                 "hard": {
-                    "question": "What makes zero-day vulnerabilities particularly dangerous in cybersecurity?",
+                    "question": "What is a side-channel attack in cryptography?",
                     "options": [
-                        "They're unknown to vendors with no available patches",
-                        "They only affect newly released systems",
-                        "They can only be exploited during midnight hours",
-                        "They require no user interaction to exploit"
+                        "Exploiting physical implementation characteristics rather than theoretical weaknesses",
+                        "Using multiple encryption algorithms simultaneously",
+                        "Attacking through network side connections",
+                        "Breaking encryption by guessing keys"
                     ],
-                    "correct_answer": "They're unknown to vendors with no available patches",
-                    "explanation": "Zero-day vulnerabilities are security flaws that are unknown to software vendors and security teams, making them particularly dangerous as there are no patches or defenses available."
+                    "correct_answer": "Exploiting physical implementation characteristics rather than theoretical weaknesses",
+                    "explanation": "Side-channel attacks exploit information leaked through physical implementation of cryptographic systems, such as timing, power consumption, or electromagnetic emissions."
                 }
             },
             "data": {
                 "easy": {
-                    "question": "What is the primary purpose of data visualization?",
+                    "question": "What is the purpose of data normalization?",
                     "options": [
-                        "Make data insights easier to understand and communicate",
-                        "Reduce the size of datasets automatically",
-                        "Encrypt sensitive information in databases",
-                        "Replace the need for statistical analysis"
+                        "Scale features to similar ranges for better model performance",
+                        "Remove duplicate records from datasets",
+                        "Convert categorical data to numerical",
+                        "Compress data to save storage space"
                     ],
-                    "correct_answer": "Make data insights easier to understand and communicate",
-                    "explanation": "Data visualization transforms complex data into visual formats like charts and graphs to make patterns, trends, and insights more accessible and understandable."
+                    "correct_answer": "Scale features to similar ranges for better model performance",
+                    "explanation": "Data normalization scales numerical features to similar ranges, preventing features with larger scales from dominating the learning process."
                 },
                 "medium": {
-                    "question": "When should you use a median instead of a mean for central tendency?",
+                    "question": "When should you use cross-validation in machine learning?",
                     "options": [
-                        "When the data has outliers or is skewed",
-                        "When working with categorical data only",
-                        "When the dataset is very small",
-                        "When all values are the same"
+                        "To get reliable estimates of model performance",
+                        "To increase the size of your training dataset",
+                        "To speed up training time",
+                        "To automatically select features"
                     ],
-                    "correct_answer": "When the data has outliers or is skewed",
-                    "explanation": "Median is more robust to outliers and provides a better representation of central tendency when data is skewed, as it's not affected by extreme values."
+                    "correct_answer": "To get reliable estimates of model performance",
+                    "explanation": "Cross-validation helps obtain more reliable estimates of model performance by testing on multiple different train-test splits of the data."
                 },
                 "hard": {
-                    "question": "What is the curse of dimensionality in machine learning?",
+                    "question": "What is the bias-variance tradeoff in machine learning?",
                     "options": [
-                        "Performance degrades as feature dimensions increase exponentially",
-                        "Models can only handle 2D data effectively",
-                        "Training time increases linearly with features",
-                        "Memory usage decreases with more dimensions"
+                        "Balance between model simplicity and flexibility to minimize total error",
+                        "Choice between accuracy and interpretability",
+                        "Tradeoff between training speed and prediction speed",
+                        "Balance between training data size and model complexity"
                     ],
-                    "correct_answer": "Performance degrades as feature dimensions increase exponentially",
-                    "explanation": "The curse of dimensionality refers to various phenomena that arise when analyzing data in high-dimensional spaces, where distance metrics become less meaningful and data becomes sparse."
+                    "correct_answer": "Balance between model simplicity and flexibility to minimize total error",
+                    "explanation": "The bias-variance tradeoff describes the relationship between model complexity, underfitting (high bias), and overfitting (high variance) to minimize total prediction error."
                 }
             }
         }
+    
+    def get_demo_question(self, track: str, difficulty: str) -> Dict:
+        """Get a demo question"""
+        demo_db = self.get_demo_questions()
         
-        # Add more tracks with demo questions
-        default_questions = {
-            "mobile": {
-                "question": "What is the main advantage of React Native for mobile development?",
-                "options": [
-                    "Write once, run on both iOS and Android",
-                    "Automatic app store deployment",
-                    "Built-in payment processing",
-                    "No coding required"
-                ],
-                "correct_answer": "Write once, run on both iOS and Android",
-                "explanation": "React Native allows developers to use a single codebase to create apps for both iOS and Android platforms."
-            },
-            "devops": {
-                "question": "What is the main purpose of Docker containers?",
-                "options": [
-                    "Package applications with their dependencies for consistent deployment",
-                    "Only for web application development",
-                    "Replace traditional databases",
-                    "Automatic code generation"
-                ],
-                "correct_answer": "Package applications with their dependencies for consistent deployment",
-                "explanation": "Docker containers package applications with all their dependencies to ensure consistent behavior across different environments."
+        # Try to get specific question
+        if track in demo_db and difficulty in demo_db[track]:
+            demo = demo_db[track][difficulty]
+            return {
+                'text': demo['question'],
+                'options': demo['options'],
+                'correct_answer': demo['correct_answer'],
+                'explanation': demo['explanation'],
+                'track': track,
+                'difficulty': difficulty,
+                'generated_by': 'Demo Database'
             }
+        
+        # Fallback generic question
+        return {
+            'text': f"What is a key concept in {self.available_tracks.get(track, track)}?",
+            'options': [
+                "The fundamental principle",
+                "An incorrect alternative",
+                "Another wrong option",
+                "A clearly false choice"
+            ],
+            'correct_answer': "The fundamental principle",
+            'explanation': f"This tests basic knowledge in {track} at {difficulty} level.",
+            'track': track,
+            'difficulty': difficulty,
+            'generated_by': 'Generic Fallback'
         }
-        
-        # Get the question or return a track-specific one
-        if track in demo_questions and difficulty in demo_questions[track]:
-            demo = demo_questions[track][difficulty]
-            return {
-                'text': demo['question'],
-                'options': demo['options'],
-                'correct_answer': demo['correct_answer'],
-                'explanation': demo['explanation'],
-                'track': track,
-                'difficulty': difficulty,
-                'generated_by': 'Demo Mode'
-            }
-        elif track in default_questions:
-            demo = default_questions[track]
-            return {
-                'text': demo['question'],
-                'options': demo['options'],
-                'correct_answer': demo['correct_answer'],
-                'explanation': demo['explanation'],
-                'track': track,
-                'difficulty': difficulty,
-                'generated_by': 'Demo Mode'
-            }
-        else:
-            return {
-                'text': f"What is an important concept in {self.available_tracks[track]}?",
-                'options': [
-                    "The correct answer for this topic",
-                    "An incorrect but plausible option",
-                    "Another incorrect alternative",
-                    "A clearly wrong choice"
-                ],
-                'correct_answer': "The correct answer for this topic",
-                'explanation': f"This tests {difficulty} level knowledge of {self.available_tracks[track]}.",
-                'track': track,
-                'difficulty': difficulty,
-                'generated_by': 'Generic Demo'
-            }
     
     def generate_with_ai(self, track: str, difficulty: str) -> Dict:
-        """Generate question using AI (FLAN-T5) with improved error handling"""
-        if not self.client or not self.hf_token:
-            st.warning("🤖 AI generation not available, using demo question")
+        """Generate question with AI"""
+        if not self.client:
             return self.get_demo_question(track, difficulty)
         
-        try:
-            prompt = self._create_prompt(track, difficulty)
-            
-            # Try multiple models in order of preference
-            models_to_try = [
-                "google/flan-t5-large",
-                "google/flan-t5-base",
-                "microsoft/DialoGPT-medium"
-            ]
-            
-            response_text = None
-            used_model = None
-            
-            for model in models_to_try:
-                try:
-                    st.info(f"🔄 Trying model: {model}")
-                    
-                    response = self.client.text_generation(
-                        model=model,
-                        prompt=prompt,
-                        max_new_tokens=500,
-                        temperature=0.7,
-                        do_sample=True,
-                        top_p=0.9,
-                        repetition_penalty=1.1
-                    )
-                    
-                    # Handle different response formats
-                    if isinstance(response, str):
-                        response_text = response
-                    elif isinstance(response, dict) and "generated_text" in response:
-                        response_text = response["generated_text"]
-                    elif isinstance(response, list) and len(response) > 0:
-                        if isinstance(response[0], dict) and "generated_text" in response[0]:
-                            response_text = response[0]["generated_text"]
-                        elif isinstance(response[0], str):
-                            response_text = response[0]
-                    
-                    if response_text:
-                        used_model = model
-                        break
-                        
-                except Exception as model_error:
-                    st.warning(f"⚠️ Model {model} failed: {str(model_error)[:100]}...")
-                    continue
-            
-            if response_text:
-                st.success(f"✅ Successfully generated with {used_model}")
-                return self._parse_response(response_text, track, difficulty, used_model)
-            else:
-                st.error("❌ All AI models failed, using demo question")
-                return self.get_demo_question(track, difficulty)
-            
-        except Exception as e:
-            st.error(f"❌ AI generation error: {str(e)[:200]}...")
-            return self.get_demo_question(track, difficulty)
-    
-    def _create_prompt(self, track: str, difficulty: str) -> str:
-        """Create an improved prompt for FLAN-T5"""
-        track_desc = self.available_tracks[track]
-        
-        # More specific prompts based on difficulty
-        difficulty_guidelines = {
-            "easy": "fundamental concepts, basic definitions, introductory knowledge",
-            "medium": "practical applications, intermediate concepts, problem-solving",
-            "hard": "advanced topics, complex scenarios, expert-level understanding"
-        }
-        
-        prompt = f"""Generate a {difficulty} level multiple choice question about {track_desc}.
+        # Create a focused prompt
+        prompt = f"""Create a {difficulty} multiple choice question about {self.available_tracks[track]}.
 
-The question should test {difficulty_guidelines[difficulty]}.
-
-Requirements:
-- Clear, professional question suitable for technical interviews
-- Exactly 4 answer options labeled A, B, C, D
-- Only one correct answer
-- Plausible but incorrect distractors
-- Brief explanation of the correct answer
-
-Format your response as valid JSON:
+Return JSON format:
 {{
-    "question": "Your question text here",
-    "options": {{
-        "A": "First option",
-        "B": "Second option",
-        "C": "Third option",
-        "D": "Fourth option"
-    }},
-    "correct_answer": "A",
-    "explanation": "Brief explanation of why this is correct"
+    "question": "your question here",
+    "options": ["option A", "option B", "option C", "option D"],
+    "correct": 0,
+    "explanation": "why this answer is correct"
 }}
 
-Topic: {track_desc}
-Difficulty: {difficulty}
-Focus: {difficulty_guidelines[difficulty]}
-
-Generate the JSON response now:"""
+Make it professional and test practical knowledge."""
         
-        return prompt
-    
-    def _parse_response(self, response: str, track: str, difficulty: str, model_name: str = "AI") -> Dict:
-        """Enhanced response parsing with better error handling"""
         try:
-            # Clean the response
-            response = response.strip()
+            response = self.client.text_generation(
+                model="google/flan-t5-base",
+                prompt=prompt,
+                max_new_tokens=300,
+                temperature=0.7
+            )
             
-            # Try to find JSON in the response
-            json_pattern = r'\{.*\}'
-            json_matches = re.findall(json_pattern, response, re.DOTALL)
-            
-            data = None
-            if json_matches:
-                # Try each JSON match
-                for json_match in json_matches:
-                    try:
-                        data = json.loads(json_match)
-                        if "question" in data and "options" in data:
-                            break
-                    except:
-                        continue
-            
-            if not data:
-                # Try parsing the entire response as JSON
-                try:
-                    data = json.loads(response)
-                except:
-                    pass
-            
-            if data and isinstance(data, dict):
-                # Extract and validate data
-                question_text = data.get("question", f"What is important in {track}?")
-                options_dict = data.get("options", {})
-                correct_key = data.get("correct_answer", "A")
-                explanation = data.get("explanation", f"This tests {difficulty} {track} knowledge.")
-                
-                # Convert options to list
-                if isinstance(options_dict, dict):
-                    options_list = [
-                        options_dict.get("A", "Option A"),
-                        options_dict.get("B", "Option B"),
-                        options_dict.get("C", "Option C"),
-                        options_dict.get("D", "Option D")
-                    ]
-                    correct_answer_text = options_dict.get(correct_key, options_list[0])
-                else:
-                    options_list = ["Option A", "Option B", "Option C", "Option D"]
-                    correct_answer_text = "Option A"
-                
-                return {
-                    'text': question_text,
-                    'options': options_list,
-                    'correct_answer': correct_answer_text,
-                    'explanation': explanation,
-                    'track': track,
-                    'difficulty': difficulty,
-                    'generated_by': f'{model_name} AI'
-                }
+            # Parse response
+            if isinstance(response, str):
+                response_text = response
+            elif isinstance(response, dict):
+                response_text = response.get("generated_text", "")
             else:
-                raise ValueError("Could not parse AI response")
-                
+                response_text = str(response)
+            
+            return self._parse_ai_response(response_text, track, difficulty)
+            
         except Exception as e:
-            st.warning(f"⚠️ Parsing failed ({str(e)[:50]}...), using demo question")
+            st.warning(f"AI generation failed: {str(e)[:100]}")
             return self.get_demo_question(track, difficulty)
     
-    def generate_question_set(self, track: str, num_questions: int, difficulty: str, use_ai: bool = True) -> List[Dict]:
-        """Generate a set of questions with improved progress tracking"""
-        questions = []
-        
-        # Create progress tracking
-        progress_container = st.empty()
-        
-        for i in range(num_questions):
-            # Update progress
-            progress = (i + 1) / num_questions
-            progress_container.progress(progress, text=f"Generating question {i + 1} of {num_questions}...")
+    def _parse_ai_response(self, response: str, track: str, difficulty: str) -> Dict:
+        """Parse AI response"""
+        try:
+            # Try to find JSON
+            json_match = re.search(r'\{.*\}', response, re.DOTALL)
+            if json_match:
+                data = json.loads(json_match.group())
+                
+                options = data.get("options", [])
+                correct_idx = data.get("correct", 0)
+                
+                if options and 0 <= correct_idx < len(options):
+                    return {
+                        'text': data.get("question", f"Question about {track}"),
+                        'options': options,
+                        'correct_answer': options[correct_idx],
+                        'explanation': data.get("explanation", f"Testing {difficulty} {track} knowledge"),
+                        'track': track,
+                        'difficulty': difficulty,
+                        'generated_by': 'FLAN-T5 AI'
+                    }
             
-            if use_ai and self.client and self.hf_token:
+            # If parsing fails, use demo
+            return self.get_demo_question(track, difficulty)
+            
+        except:
+            return self.get_demo_question(track, difficulty)
+    
+    def generate_questions(self, track: str, difficulty: str, count: int, use_ai: bool = True) -> List[Dict]:
+        """Generate multiple questions"""
+        questions = []
+        progress_bar = st.progress(0)
+        
+        for i in range(count):
+            progress_bar.progress((i + 1) / count, f"Generating question {i + 1}/{count}")
+            
+            if use_ai and self.client:
                 question = self.generate_with_ai(track, difficulty)
             else:
                 question = self.get_demo_question(track, difficulty)
             
             questions.append(question)
             
-            # Small delay to prevent rate limiting
-            if use_ai and i < num_questions - 1:
-                time.sleep(1)
+            # Prevent rate limiting
+            if use_ai and i < count - 1:
+                time.sleep(0.5)
         
-        # Clear progress
-        progress_container.empty()
+        progress_bar.empty()
         return questions
 
 def main():
-    """Main Streamlit app with improved UI"""
     st.set_page_config(
-        page_title="MCQ Generator Pro",
-        page_icon="🤖",
-        layout="wide",
-        initial_sidebar_state="expanded"
+        page_title="MCQ Generator",
+        page_icon="🎯",
+        layout="wide"
     )
     
-    # Custom CSS for better styling
-    st.markdown("""
-    <style>
-    .main-header {
-        text-align: center;
-        padding: 1rem 0;
-        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-        color: white;
-        border-radius: 10px;
-        margin-bottom: 2rem;
-    }
-    .question-container {
-        background: #f8f9fa;
-        padding: 1.5rem;
-        border-radius: 10px;
-        margin: 1rem 0;
-        border-left: 4px solid #007bff;
-    }
-    .correct-answer {
-        background-color: #d4edda;
-        border-color: #c3e6cb;
-        color: #155724;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+    st.title("🎯 MCQ Generator")
+    st.write("Generate technical interview questions")
     
-    # Header
-    st.markdown("""
-    <div class="main-header">
-        <h1>🤖 MCQ Generator Pro</h1>
-        <p>Generate professional technical interview questions using AI</p>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    # Initialize generator
+    # Initialize
     if 'generator' not in st.session_state:
-        with st.spinner("Initializing MCQ Generator..."):
-            st.session_state.generator = SimpleMCQGenerator()
+        st.session_state.generator = MCQGenerator()
     
     generator = st.session_state.generator
     
-    # Sidebar configuration
-    with st.sidebar:
-        st.header("⚙️ Configuration")
-        
-        # Connection status
-        if generator.hf_token and generator.client:
-            st.success("✅ AI Mode Active")
-            st.info("🤖 Using Hugging Face API")
-        else:
-            st.warning("📋 Demo Mode Active")
-            st.info("💡 Add HF_TOKEN to secrets for AI generation")
-        
-        st.divider()
-        
-        # Settings
-        use_ai = st.checkbox(
-            "🤖 Use AI Generation", 
-            value=bool(generator.hf_token and generator.client),
-            disabled=not (generator.hf_token and generator.client),
-            help="Enable AI-powered question generation"
-        )
-        
-        # Show token status
-        if generator.hf_token:
-            masked_token = f"{generator.hf_token[:8]}{'*' * 20}"
-            st.caption(f"Token: {masked_token}")
-    
-    # Main interface
-    col1, col2 = st.columns([3, 2])
+    # Configuration
+    col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.subheader("📚 Question Configuration")
-        
-        # Track selection with better formatting
+        # Track selection
         track = st.selectbox(
-            "🎯 Technology Track:",
-            options=generator.get_available_tracks(),
-            format_func=lambda x: f"{x.upper()} - {generator.available_tracks[x].split('(')[0].strip()}",
-            help="Select the technology domain for questions"
+            "Technology Track:",
+            options=list(generator.available_tracks.keys()),
+            format_func=lambda x: f"{x.upper()} - {generator.available_tracks[x].split('(')[0].strip()}"
         )
         
-        # Show track description
-        st.info(f"📖 **Focus:** {generator.available_tracks[track]}")
-        
-        # Difficulty and number in columns
+        # Settings
         col1_1, col1_2 = st.columns(2)
         with col1_1:
-            difficulty = st.selectbox(
-                "📊 Difficulty Level:", 
-                options=["easy", "medium", "hard"], 
-                index=1,
-                help="Select question difficulty level"
-            )
+            difficulty = st.selectbox("Difficulty:", ["easy", "medium", "hard"], index=1)
         with col1_2:
-            num_questions = st.number_input(
-                "📝 Number of Questions:", 
-                min_value=1, 
-                max_value=10, 
-                value=3,
-                help="How many questions to generate"
-            )
+            count = st.number_input("Questions:", min_value=1, max_value=10, value=3)
     
     with col2:
-        st.subheader("📊 Generation Summary")
+        st.subheader("Settings")
         
-        # Summary cards
-        summary_data = [
-            ("🎯 Track", track.upper()),
-            ("📊 Level", difficulty.title()),
-            ("📝 Count", str(num_questions)),
-            ("🤖 Mode", "AI" if use_ai else "Demo")
-        ]
+        # Show mode
+        if generator.client:
+            st.success("🤖 AI Available")
+            use_ai = st.checkbox("Use AI Generation", value=True)
+        else:
+            st.info("📋 Demo Mode")
+            use_ai = False
         
-        for label, value in summary_data:
-            if "AI" in value:
-                st.success(f"**{label}:** {value}")
-            elif "Demo" in value:
-                st.warning(f"**{label}:** {value}")
-            else:
-                st.info(f"**{label}:** {value}")
-        
-        # Estimated time
-        est_time = num_questions * (3 if use_ai else 1)
-        st.caption(f"⏱️ Estimated time: ~{est_time} seconds")
-    
-    st.divider()
+        st.info(f"Track: {track.upper()}")
+        st.info(f"Level: {difficulty}")
+        st.info(f"Count: {count}")
     
     # Generate button
-    col_btn1, col_btn2, col_btn3 = st.columns([1, 2, 1])
-    with col_btn2:
-        if st.button("🚀 Generate Questions", type="primary", use_container_width=True):
-            with st.spinner("🎯 Generating questions..."):
-                try:
-                    questions = generator.generate_question_set(
-                        track=track,
-                        num_questions=num_questions, 
-                        difficulty=difficulty,
-                        use_ai=use_ai
-                    )
-                    
-                    # Store questions in session state
-                    st.session_state.questions = questions
-                    st.session_state.generation_info = {
-                        'track': track,
-                        'difficulty': difficulty,
-                        'count': len(questions),
-                        'mode': 'AI' if use_ai else 'Demo',
-                        'timestamp': time.strftime("%Y-%m-%d %H:%M:%S")
-                    }
-                    
-                    st.success(f"✅ Successfully generated {len(questions)} questions!")
-                    
-                except Exception as e:
-                    st.error(f"❌ Generation failed: {str(e)}")
+    if st.button("Generate Questions", type="primary", use_container_width=True):
+        questions = generator.generate_questions(track, difficulty, count, use_ai)
+        st.session_state.questions = questions
+        st.success(f"Generated {len(questions)} questions!")
     
     # Display questions
-    if 'questions' in st.session_state and st.session_state.questions:
+    if 'questions' in st.session_state:
         st.divider()
+        st.subheader("Generated Questions")
         
-        # Questions header with info
-        col_header1, col_header2 = st.columns([2, 1])
-        with col_header1:
-            st.header("📝 Generated Questions")
-        with col_header2:
-            if 'generation_info' in st.session_state:
-                info = st.session_state.generation_info
-                st.caption(f"Generated: {info['timestamp']}")
-                st.caption(f"Mode: {info['mode']} | Track: {info['track'].upper()}")
-        
-        # Display each question
         for i, q in enumerate(st.session_state.questions, 1):
-            st.markdown(f"""
-            <div class="question-container">
-                <h4>Question {i}</h4>
-            </div>
-            """, unsafe_allow_html=True)
+            st.write(f"### Question {i}")
+            st.write(f"**{q['text']}**")
             
-            # Question metadata
-            col_meta1, col_meta2, col_meta3 = st.columns([2, 1, 1])
-            with col_meta1:
-                st.markdown(f"**{q['text']}**")
-            with col_meta2:
-                st.badge(q['track'].upper(), type="secondary")
-            with col_meta3:
-                st.badge(q['difficulty'].upper(), type="secondary")
-            
-            # Answer options
+            # Options
             for j, option in enumerate(q['options']):
-                option_letter = chr(65 + j)  # A, B, C, D
                 if option == q['correct_answer']:
-                    st.success(f"✅ **{option_letter}) {option}**")
+                    st.success(f"✅ {chr(65+j)}) {option}")
                 else:
-                    st.write(f"{option_letter}) {option}")
+                    st.write(f"{chr(65+j)}) {option}")
             
-            # Explanation in expandable section
-            with st.expander("💡 View Explanation"):
+            # Explanation
+            with st.expander("Show Explanation"):
                 st.info(q['explanation'])
-                st.caption(f"Generated by: {q['generated_by']}")
+                st.caption(f"Source: {q['generated_by']}")
             
             if i < len(st.session_state.questions):
                 st.divider()
         
-        # Export options
-        st.divider()
-        st.subheader("📥 Export Options")
-        
-        col_export1, col_export2 = st.columns(2)
-        
-        with col_export1:
-            # JSON export
-            if st.button("📄 Export as JSON", use_container_width=True):
-                questions_json = json.dumps(st.session_state.questions, indent=2, ensure_ascii=False)
-                st.download_button(
-                    label="⬇️ Download JSON File",
-                    data=questions_json,
-                    file_name=f"mcq_{track}_{difficulty}_{len(st.session_state.questions)}_{int(time.time())}.json",
-                    mime="application/json",
-                    use_container_width=True
-                )
-        
-        with col_export2:
-            # Text export
-            if st.button("📝 Export as Text", use_container_width=True):
-                text_content = f"MCQ Questions - {track.upper()} ({difficulty.title()})\n"
-                text_content += f"Generated: {st.session_state.generation_info['timestamp']}\n"
-                text_content += "=" * 50 + "\n\n"
-                
-                for i, q in enumerate(st.session_state.questions, 1):
-                    text_content += f"Question {i}:\n{q['text']}\n\n"
-                    for j, option in enumerate(q['options']):
-                        letter = chr(65 + j)
-                        marker = "✓" if option == q['correct_answer'] else " "
-                        text_content += f"{letter}) {option} {marker}\n"
-                    text_content += f"\nExplanation: {q['explanation']}\n"
-                    text_content += "-" * 30 + "\n\n"
-                
-                st.download_button(
-                    label="⬇️ Download Text File",
-                    data=text_content,
-                    file_name=f"mcq_{track}_{difficulty}_{len(st.session_state.questions)}.txt",
-                    mime="text/plain",
-                    use_container_width=True
-                )
+        # Export
+        if st.button("Export as JSON"):
+            json_data = json.dumps(st.session_state.questions, indent=2)
+            st.download_button(
+                "Download JSON",
+                json_data,
+                f"mcq_{track}_{difficulty}_{count}.json",
+                "application/json"
+            )
 
 if __name__ == "__main__":
     main()
