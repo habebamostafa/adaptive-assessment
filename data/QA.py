@@ -1,19 +1,14 @@
 """
-Enhanced questions.py with intelligent MCQ generator using language models
-Focuses on generating questions dynamically rather than using pre-stored ones
+Intelligent MCQ Generator using only prompt-based generation without pre-stored data
 """
 
-import json
-import random
 import streamlit as st
-from typing import List, Dict, Optional, Tuple
+import random
 import time
-import re
 
-class IntelligentMCQGenerator:
+class PurePromptMCQGenerator:
     def __init__(self):
-        """Initialize the intelligent MCQ generator"""
-        # We'll use a mock model for generation since we can't load real models in this environment
+        """Initialize the pure prompt-based MCQ generator"""
         self.available_tracks = {
             "web": "Web Development (HTML, CSS, JavaScript, React, etc.)",
             "ai": "Artificial Intelligence (Machine Learning, Deep Learning, NLP, etc.)",
@@ -23,251 +18,209 @@ class IntelligentMCQGenerator:
             "devops": "DevOps (Docker, Kubernetes, CI/CD, Cloud Computing, etc.)"
         }
         
-        # Cache for generated questions to avoid duplicates
-        self.question_cache = {}
-
-    def get_available_tracks(self) -> List[str]:
+    def get_available_tracks(self) -> list:
         """Get list of available technology tracks"""
         return list(self.available_tracks.keys())
-
-    def generate_question(self, track: str, difficulty: str = "medium") -> Dict:
+    
+    def generate_question(self, track: str, difficulty: str = "medium") -> dict:
         """
-        Generate a question for the specified track and difficulty
+        Generate a question using only prompt-based logic
         
         Args:
-            track: Technology track (web, ai, cyber, data, mobile, devops)
+            track: Technology track
             difficulty: Difficulty level (easy, medium, hard)
         
         Returns:
-            Question dictionary with text, options, correct answer, and explanation
+            Question dictionary
         """
-        if track not in self.available_tracks:
-            return self._create_fallback_question(track, difficulty)
+        # Generate question text based on track and difficulty
+        question_text = self._generate_question_text(track, difficulty)
         
-        try:
-            # Generate question and options based on track and difficulty
-            question_text, options = self._generate_question_content(track, difficulty)
-            
-            # Ensure we have valid question and options
-            if not question_text or not options or len(options) < 4:
-                return self._create_fallback_question(track, difficulty)
-            
-            # Create explanation
-            explanation = self._generate_explanation(track, question_text, options[0])
-            
-            return {
-                'text': question_text,
-                'options': options,
-                'correct_answer': options[0],  # First option is correct
-                'explanation': explanation,
-                'track': track,
-                'difficulty': difficulty,
-                'generated': True
-            }
-            
-        except Exception as e:
-            print(f"Error generating question: {e}")
-            return self._create_fallback_question(track, difficulty)
-
-    def _generate_question_content(self, track: str, difficulty: str) -> Tuple[str, List[str]]:
-        """Generate question content based on track and difficulty"""
-        # This is a mock implementation that simulates what a language model would generate
-        # In a real implementation, this would call an actual language model
+        # Generate options
+        options, correct_answer = self._generate_options(track, difficulty)
         
-        track_topics = {
+        # Generate explanation
+        explanation = self._generate_explanation(track, correct_answer)
+        
+        return {
+            'text': question_text,
+            'options': options,
+            'correct_answer': correct_answer,
+            'explanation': explanation,
+            'track': track,
+            'difficulty': difficulty,
+            'generated': True
+        }
+    
+    def _generate_question_text(self, track: str, difficulty: str) -> str:
+        """Generate question text using prompt logic"""
+        track_name = self.available_tracks[track]
+        
+        question_types = {
+            "easy": [
+                f"What is the basic purpose of {{topic}} in {track_name}?",
+                f"Which of these is a fundamental concept of {{topic}} in {track_name}?",
+                f"How does {{topic}} work at a basic level in {track_name}?",
+                f"Why is {{topic}} important for beginners in {track_name}?"
+            ],
+            "medium": [
+                f"Which statement best describes {{topic}} in {track_name}?",
+                f"How would you implement {{topic}} in a real {track_name} project?",
+                f"What is the primary advantage of using {{topic}} in {track_name}?",
+                f"Which approach is most effective for {{topic}} in {track_name}?"
+            ],
+            "hard": [
+                f"What are the advanced considerations when working with {{topic}} in {track_name}?",
+                f"How would you optimize {{topic}} for enterprise-level {track_name} applications?",
+                f"What challenges might you encounter when implementing {{topic}} in complex {track_name} systems?",
+                f"Which advanced technique is most appropriate for {{topic}} in high-performance {track_name} applications?"
+            ]
+        }
+        
+        # Select topics based on track and difficulty
+        topics = self._get_topics(track, difficulty)
+        topic = random.choice(topics)
+        
+        # Select question template
+        template = random.choice(question_types[difficulty])
+        
+        return template.format(topic=topic)
+    
+    def _get_topics(self, track: str, difficulty: str) -> list:
+        """Get relevant topics for a track and difficulty"""
+        topics = {
             "web": {
-                "easy": ["HTML tags", "CSS selectors", "basic JavaScript syntax", "responsive design principles"],
-                "medium": ["React components", "API integration", "state management", "CSS frameworks"],
-                "hard": ["performance optimization", "WebAssembly", "Progressive Web Apps", "advanced JavaScript patterns"]
+                "easy": ["HTML", "CSS", "JavaScript", "responsive design", "DOM manipulation"],
+                "medium": ["React", "API integration", "state management", "CSS frameworks", "routing"],
+                "hard": ["performance optimization", "WebAssembly", "Progressive Web Apps", "server-side rendering", "advanced security"]
             },
             "ai": {
-                "easy": ["machine learning basics", "neural network components", "data preprocessing", "model evaluation"],
-                "medium": ["CNN architectures", "RNN applications", "transfer learning", "hyperparameter tuning"],
-                "hard": ["transformers architecture", "GAN implementations", "reinforcement learning", "explainable AI"]
+                "easy": ["machine learning", "neural networks", "data preprocessing", "model training", "basic algorithms"],
+                "medium": ["CNN", "RNN", "transfer learning", "hyperparameter tuning", "model evaluation"],
+                "hard": ["transformers", "GANs", "reinforcement learning", "explainable AI", "advanced optimization"]
             },
             "cyber": {
-                "easy": ["password security", "firewall basics", "encryption types", "social engineering awareness"],
-                "medium": ["network penetration testing", "cryptographic protocols", "incident response", "vulnerability assessment"],
-                "hard": ["zero-day exploits", "advanced persistent threats", "quantum cryptography", "reverse engineering"]
+                "easy": ["encryption", "firewalls", "authentication", "basic security protocols", "password management"],
+                "medium": ["penetration testing", "cryptographic protocols", "incident response", "vulnerability assessment", "network security"],
+                "hard": ["zero-day exploits", "advanced persistent threats", "quantum cryptography", "reverse engineering", "threat intelligence"]
             },
             "data": {
-                "easy": ["data cleaning techniques", "basic statistics", "visualization types", "SQL queries"],
-                "medium": ["feature engineering", "regression models", "clustering algorithms", "time series analysis"],
-                "hard": ["deep learning for data", "big data architectures", "MLOps practices", "advanced statistical modeling"]
+                "easy": ["data cleaning", "basic statistics", "data visualization", "SQL queries", "data types"],
+                "medium": ["feature engineering", "regression models", "clustering algorithms", "time series analysis", "data pipelines"],
+                "hard": ["deep learning", "big data architectures", "MLOps", "advanced statistical modeling", "real-time analytics"]
             },
             "mobile": {
-                "easy": ["UI components", "basic app structure", "platform differences", "simple user interactions"],
-                "medium": ["state management", "native module integration", "performance optimization", "offline capabilities"],
-                "hard": ["advanced animations", "cross-platform challenges", "security implementations", "low-level optimizations"]
+                "easy": ["UI components", "app structure", "platform differences", "user interactions", "basic layouts"],
+                "medium": ["state management", "native modules", "performance optimization", "offline capabilities", "device APIs"],
+                "hard": ["advanced animations", "cross-platform challenges", "security implementations", "low-level optimizations", "custom components"]
             },
             "devops": {
-                "easy": ["version control basics", "CI/CD concepts", "container basics", "cloud fundamentals"],
-                "medium": ["infrastructure as code", "orchestration tools", "monitoring solutions", "deployment strategies"],
-                "hard": ["chaos engineering", "gitops methodologies", "service mesh implementations", "advanced security practices"]
+                "easy": ["version control", "CI/CD", "containers", "cloud basics", "basic automation"],
+                "medium": ["infrastructure as code", "orchestration", "monitoring", "deployment strategies", "configuration management"],
+                "hard": ["chaos engineering", "gitops", "service mesh", "advanced security", "scalability solutions"]
             }
         }
         
-        # Select a topic based on track and difficulty
-        topics = track_topics.get(track, {}).get(difficulty, ["key concepts"])
-        topic = random.choice(topics)
-        
-        # Generate question text
-        question_types = [
-            f"What is the primary purpose of {topic} in {track} development?",
-            f"Which of these best describes {topic} in the context of {track}?",
-            f"How does {topic} contribute to effective {track} solutions?",
-            f"What is a key consideration when implementing {topic} in {track} projects?",
-            f"Which statement accurately describes the role of {topic} in {track}?"
-        ]
-        
-        question_text = random.choice(question_types)
-        
-        # Generate options - first is correct, others are plausible but incorrect
-        correct_options = {
+        return topics[track][difficulty]
+    
+    def _generate_options(self, track: str, difficulty: str) -> tuple:
+        """Generate options for a question"""
+        # Correct answer patterns
+        correct_patterns = {
             "web": [
                 "It provides structure and semantics to web content",
                 "It enables dynamic styling and responsive layouts",
                 "It adds interactivity and client-side functionality",
-                "It facilitates component-based UI development"
+                "It facilitates component-based UI development",
+                "It ensures cross-browser compatibility"
             ],
             "ai": [
                 "It enables machines to learn from data without explicit programming",
                 "It processes and analyzes complex patterns in large datasets",
                 "It mimics human cognitive functions for problem solving",
-                "It optimizes decision-making processes through algorithms"
+                "It optimizes decision-making processes through algorithms",
+                "It extracts meaningful insights from raw information"
             ],
             "cyber": [
                 "It protects systems and data from unauthorized access and attacks",
                 "It ensures confidentiality, integrity and availability of information",
                 "It identifies and mitigates potential security vulnerabilities",
-                "It establishes trust and compliance in digital operations"
+                "It establishes trust and compliance in digital operations",
+                "It monitors and responds to security incidents in real-time"
             ],
             "data": [
                 "It extracts meaningful insights from raw information",
                 "It transforms, analyzes and visualizes complex datasets",
                 "It supports data-driven decision making through analysis",
-                "It manages and processes large volumes of structured and unstructured data"
+                "It manages and processes large volumes of structured and unstructured data",
+                "It builds predictive models from historical data patterns"
             ],
             "mobile": [
                 "It creates native experiences optimized for mobile devices",
                 "It enables cross-platform development with shared codebase",
                 "It implements touch-friendly interfaces and mobile-specific features",
-                "It manages device resources efficiently for optimal performance"
+                "It manages device resources efficiently for optimal performance",
+                "It ensures app security and data protection on mobile platforms"
             ],
             "devops": [
                 "It automates and streamlines development and operations processes",
                 "It enables continuous integration and delivery of software",
                 "It ensures reliable and scalable infrastructure management",
-                "It bridges development and operations for faster delivery"
+                "It bridges development and operations for faster delivery",
+                "It implements monitoring and alerting for system reliability"
             ]
         }
         
-        incorrect_options = {
-            "web": [
-                "It handles server-side business logic and database operations",
-                "It manages network protocols and data transmission",
-                "It optimizes hardware performance and resource allocation",
-                "It implements cryptographic security algorithms"
-            ],
-            "ai": [
-                "It designs user interfaces and experience flows",
-                "It manages database transactions and data persistence",
-                "It configures network infrastructure and security policies",
-                "It develops compilers and low-level system utilities"
-            ],
-            "cyber": [
-                "It designs user experience and interface elements",
-                "It develops application features and functionality",
-                "It manages cloud storage and data backup solutions",
-                "It optimizes database queries and performance"
-            ],
-            "data": [
-                "It implements user authentication and authorization systems",
-                "It develops mobile application interfaces and interactions",
-                "It configures network routers and switching infrastructure",
-                "It designs graphical assets and visual branding elements"
-            ],
-            "mobile": [
-                "It implements server-side API endpoints and business logic",
-                "It configures network security policies and firewall rules",
-                "It designs database schemas and optimization strategies",
-                "It develops operating system kernels and low-level drivers"
-            ],
-            "devops": [
-                "It designs user interface components and interactions",
-                "It implements application-specific business rules and logic",
-                "It creates visual designs and branding elements",
-                "It develops algorithms for data processing and analysis"
-            ]
-        }
+        # Incorrect answer patterns
+        incorrect_patterns = [
+            "It handles server-side business logic and database operations",
+            "It manages network protocols and data transmission",
+            "It optimizes hardware performance and resource allocation",
+            "It implements cryptographic security algorithms",
+            "It designs user interfaces and experience flows",
+            "It manages database transactions and data persistence",
+            "It configures network infrastructure and security policies",
+            "It develops compilers and low-level system utilities",
+            "It designs user experience and interface elements",
+            "It develops application features and functionality",
+            "It manages cloud storage and data backup solutions",
+            "It optimizes database queries and performance",
+            "It implements user authentication and authorization systems",
+            "It develops mobile application interfaces and interactions",
+            "It configures network routers and switching infrastructure",
+            "It designs graphical assets and visual branding elements",
+            "It implements server-side API endpoints and business logic",
+            "It configures network security policies and firewall rules",
+            "It designs database schemas and optimization strategies",
+            "It develops operating system kernels and low-level drivers"
+        ]
         
-        # Select one correct option and three incorrect ones
-        options = [random.choice(correct_options.get(track, ["Correct answer"]))]
-        options.extend(random.sample(incorrect_options.get(track, [
-            "Incorrect alternative 1", 
-            "Incorrect alternative 2",
-            "Incorrect alternative 3",
-            "Incorrect alternative 4"
-        ]), 3))
+        # Select one correct option
+        correct_answer = random.choice(correct_patterns[track])
         
-        # Shuffle options but remember the correct one
-        correct_answer = options[0]
+        # Select three incorrect options
+        incorrect_options = random.sample(incorrect_patterns, 3)
+        
+        # Combine and shuffle options
+        options = [correct_answer] + incorrect_options
         random.shuffle(options)
         
-        # Return the question and options
-        return question_text, options, correct_answer
-
-    def _generate_explanation(self, track: str, question: str, correct_answer: str) -> str:
-        """Generate an explanation for the correct answer"""
+        return options, correct_answer
+    
+    def _generate_explanation(self, track: str, correct_answer: str) -> str:
+        """Generate explanation for the correct answer"""
         explanations = {
-            "web": f"The correct answer is {correct_answer} because it represents a fundamental concept in web development that addresses the question: '{question}'.",
-            "ai": f"{correct_answer} is the right choice as it aligns with core principles of artificial intelligence and machine learning related to: '{question}'.",
-            "cyber": f"In cybersecurity, {correct_answer} is the appropriate response to '{question}' as it reflects established security protocols and best practices.",
-            "data": f"For data science, {correct_answer} correctly addresses '{question}' based on statistical principles and data analysis methodologies.",
-            "mobile": f"In mobile development, {correct_answer} is the correct approach for '{question}' following platform-specific guidelines and patterns.",
-            "devops": f"The DevOps perspective confirms {correct_answer} as the right answer for '{question}' based on automation, collaboration, and integration principles."
+            "web": f"{correct_answer} is correct because it represents a core principle of web development that ensures effective, responsive, and secure web applications.",
+            "ai": f"{correct_answer} is the right choice as it aligns with fundamental AI concepts that enable machines to learn, reason, and solve complex problems.",
+            "cyber": f"In cybersecurity, {correct_answer} is essential for protecting digital assets, preventing unauthorized access, and maintaining system integrity.",
+            "data": f"For data science, {correct_answer} correctly describes processes for extracting insights, building models, and supporting data-driven decisions.",
+            "mobile": f"In mobile development, {correct_answer} addresses key considerations for creating performant, user-friendly, and platform-appropriate applications.",
+            "devops": f"The DevOps practice confirms {correct_answer} as critical for automating workflows, ensuring reliability, and accelerating software delivery."
         }
         
-        return explanations.get(track, f"The correct answer is {correct_answer} because it best addresses the question: '{question}'.")
-
-    def _create_fallback_question(self, track: str, difficulty: str) -> Dict:
-        """Create a fallback question if generation fails"""
-        difficulty_text = {
-            "easy": "basic",
-            "medium": "intermediate",
-            "hard": "advanced"
-        }.get(difficulty, "intermediate")
-        
-        track_name = self.available_tracks.get(track, track)
-        
-        questions = {
-            "web": f"What is a {difficulty_text} concept in {track_name}?",
-            "ai": f"Which {difficulty_text} technique is commonly used in {track_name}?",
-            "cyber": f"What is a {difficulty_text} security consideration in {track_name}?",
-            "data": f"Which {difficulty_text} approach is important in {track_name}?",
-            "mobile": f"What is a {difficulty_text} development pattern in {track_name}?",
-            "devops": f"Which {difficulty_text} practice is essential in {track_name}?"
-        }
-        
-        question_text = questions.get(track, f"What is a key concept in {track_name}?")
-        
-        return {
-            'text': question_text,
-            'options': [
-                f"Correct answer for {difficulty} {track}",
-                f"Alternative option 1 for {track}",
-                f"Alternative option 2 for {track}",
-                f"Alternative option 3 for {track}"
-            ],
-            'correct_answer': f"Correct answer for {difficulty} {track}",
-            'explanation': f"This is a {difficulty} level question about {track_name}.",
-            'track': track,
-            'difficulty': difficulty,
-            'generated': True,
-            'fallback': True
-        }
-
-    def generate_question_set(self, track: str, num_questions: int = 5, difficulty: str = "medium") -> List[Dict]:
+        return explanations.get(track, f"{correct_answer} is the correct answer because it best addresses the question based on established principles and practices.")
+    
+    def generate_question_set(self, track: str, num_questions: int = 5, difficulty: str = "medium") -> list:
         """
         Generate a set of questions for a track
         
@@ -283,25 +236,20 @@ class IntelligentMCQGenerator:
         for i in range(num_questions):
             question = self.generate_question(track, difficulty)
             questions.append(question)
-            # Small delay to simulate model processing
+            # Small delay to simulate processing
             time.sleep(0.1)
         
         return questions
 
-    def get_track_description(self, track: str) -> str:
-        """Get description of a track"""
-        return self.available_tracks.get(track, f"Questions about {track}")
-
-
-# Streamlit interface for testing
+# Streamlit interface
 def main():
     """Main function to run the Streamlit app"""
-    st.title("🤖 Intelligent MCQ Generator")
-    st.write("Generate technical interview questions using AI")
+    st.title("🤖 Pure Prompt MCQ Generator")
+    st.write("Generate technical interview questions using pure prompt-based generation (no pre-stored data)")
     
     # Initialize generator
     if 'generator' not in st.session_state:
-        st.session_state.generator = IntelligentMCQGenerator()
+        st.session_state.generator = PurePromptMCQGenerator()
     
     generator = st.session_state.generator
     
@@ -309,7 +257,7 @@ def main():
     track = st.selectbox(
         "Select technology track:",
         options=generator.get_available_tracks(),
-        format_func=lambda x: f"{x} - {generator.get_track_description(x)}"
+        format_func=lambda x: f"{x} - {generator.available_tracks[x]}"
     )
     
     # Difficulty selection
@@ -320,7 +268,7 @@ def main():
     )
     
     # Number of questions
-    num_questions = st.slider("Number of questions to generate:", 1, 10, 3)
+    num_questions = st.slider("Number of questions to generate:", 1, 10, 5)
     
     # Generate button
     if st.button("Generate Questions"):
