@@ -398,7 +398,7 @@ class RobustMCQGenerator:
             prompt = self._create_simple_prompt(track, difficulty)
             
             # Try a different model endpoint
-            url = "https://api-inference.huggingface.co/models/microsoft/DialoGPT-small"
+            url = "https://huggingface.co/api/models/google/flan-t5-small?expan"
             headers = {
                 "Authorization": f"Bearer {self.hf_token}",
                 "Content-Type": "application/json"
