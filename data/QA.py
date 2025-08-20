@@ -213,8 +213,9 @@ class SimpleMCQGenerator:
                 do_sample=True,
                 return_full_text=False
             )
+            generated_text = response[0]['generated_text']
             
-            return self._parse_response(response, track, difficulty)
+            return self._parse_response(generated_text,response, track, difficulty)
             
         except Exception as e:
             st.warning(f"AI generation failed: {e}")
