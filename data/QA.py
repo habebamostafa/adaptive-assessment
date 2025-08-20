@@ -4,8 +4,10 @@ import time
 from typing import List, Dict
 from crewai import Agent, Task, Crew
 import os
+from langchain_community.embeddings import HuggingFaceEmbeddings
+from langchain_community.vectorstores import FAISS
 
-# Set up environment (no API key needed for CrewAI basic usage)
+# Set up environment
 os.environ["OPENAI_API_KEY"] = "free"  # This allows using CrewAI without actual API key
 
 class CrewAIMCQGenerator:
@@ -167,7 +169,7 @@ class CrewAIMCQGenerator:
                 backstory=f"""You are an expert technical interviewer with deep knowledge of {self.available_tracks[track]}.
                 You specialize in creating challenging yet fair multiple choice questions that test both fundamental
                 understanding and practical application of concepts.""",
-                verbose=True,
+                verbose=False,  # Set to False to reduce output
                 allow_delegation=False
             )
             
@@ -199,7 +201,7 @@ class CrewAIMCQGenerator:
             crew = Crew(
                 agents=[question_agent],
                 tasks=[question_task],
-                verbose=True
+                verbose=False  # Set to False to reduce output
             )
             
             # Execute the task
