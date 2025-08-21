@@ -14,6 +14,10 @@ if 'model_loaded' not in st.session_state:
     st.session_state.model_loaded = False
 if 'model_loading' not in st.session_state:
     st.session_state.model_loading = False
+if 'tokenizer' not in st.session_state:
+    st.session_state.tokenizer = None
+if 'model' not in st.session_state:
+    st.session_state.model = None
 
 @st.cache_resource(show_spinner=False)
 def load_model():
@@ -27,6 +31,9 @@ def load_model():
             tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
             model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
         
+        # Store in session state
+        st.session_state.tokenizer = tokenizer
+        st.session_state.model = model
         st.session_state.model_loading = False
         st.session_state.model_loaded = True
         return tokenizer, model
@@ -53,10 +60,14 @@ if st.session_state.model_loading:
 def generate_text(prompt, max_len=200):
     """Generate text with progress indicator"""
     try:
+        # Use the tokenizer and model from session state
+        if st.session_state.tokenizer is None or st.session_state.model is None:
+            return "Model not loaded yet. Please wait..."
+            
         with st.spinner("🤔 Generating response..."):
-            inputs = tokenizer(prompt, return_tensors="pt")
-            outputs = model.generate(**inputs, max_length=max_len)
-            return tokenizer.decode(outputs[0], skip_special_tokens=True)
+            inputs = st.session_state.tokenizer(prompt, return_tensors="pt")
+            outputs = st.session_state.model.generate(**inputs, max_length=max_len)
+            return st.session_state.tokenizer.decode(outputs[0], skip_special_tokens=True)
     except Exception as e:
         return f"Model error: {e}"
 
@@ -81,7 +92,7 @@ with st.sidebar:
     difficulties = df['Difficulty'].unique().tolist()
     difficulty = st.selectbox("Select Difficulty:", difficulties)
     
-    num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=1)
+    num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=3)
     
     # Agent personality options
     st.subheader("Agent Personalities")
@@ -242,9 +253,9 @@ else:
         st.metric("Feedback Items", random.randint(3, 8))
     
     if st.button("🔄 Start New Interview"):
-        # Reset all session state variables
+        # Reset all session state variables except model-related ones
         for key in list(st.session_state.keys()):
-            if key not in ['model_loaded', 'model_loading']:
+            if key not in ['model_loaded', 'model_loading', 'tokenizer', 'model']:
                 del st.session_state[key]
         st.rerun()
 
