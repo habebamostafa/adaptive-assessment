@@ -120,7 +120,7 @@ def load_model_components():
         return None, None
 
 # --- Streamlit UI ---
-st.title("🤖 AI-Powered Interview Simulation")
+st.title("AI-Powered Interview Simulation")
 st.markdown("Experience a realistic interview with AI-generated questions and feedback!")
 
 # Show loading message until model is ready
