@@ -118,13 +118,13 @@ with st.sidebar:
     selected_track = st.selectbox(
         "Select Track:",
         tracks,
-        index=tracks.index(st.session_state.get('selected_track', tracks[0])) if st.session_state.get('selected_track') else 0
+        index=tracks.index(st.session_state.get('selected_track', tracks[0])) if st.session_state.get('selected_track') in tracks else 0
     )
 
     selected_difficulty = st.selectbox(
         "Select Difficulty:",
         difficulties,
-        index=difficulties.index(st.session_state.get('selected_difficulty', difficulties[0])) if st.session_state.get('selected_difficulty') else 0
+        index=difficulties.index(st.session_state.get('selected_difficulty', difficulties[0])) if st.session_state.get('selected_difficulty') in difficulties else 0
     )
 
     num_questions = st.number_input(
@@ -134,27 +134,38 @@ with st.sidebar:
         value=st.session_state.get('selected_num_questions', 1)
     )
 
-    # Confirm button
-    if st.button("Confirm Settings", type="primary", use_container_width=True):
-        # Save selected values in session_state
-        st.session_state.selected_track = selected_track
-        st.session_state.selected_difficulty = selected_difficulty
-        st.session_state.selected_num_questions = num_questions
-        # Re-select questions from CSV based on new settings
-        filtered_df = df[
-            (df['Category'] == selected_track) &
-            (df['Difficulty'] == selected_difficulty)
-        ]
-        n_questions = min(num_questions, len(filtered_df))
-        st.session_state.selected_questions = filtered_df.sample(n=n_questions)
-        st.session_state.current_q = 0
-        st.session_state.user_answers = []
-        st.session_state.conversation = []
-        st.session_state.interview_finished = False
-        st.session_state.questions_asked = []
-        st.session_state.settings_confirmed = True
-        st.session_state.show_interview = True
-        st.rerun()
+    # Check if there are questions for the selected track and difficulty
+    available_questions = df[
+        (df['Category'] == selected_track) &
+        (df['Difficulty'] == selected_difficulty)
+    ]
+    
+    # Display availability status
+    if len(available_questions) == 0:
+        st.error(f"❌ No questions available for {selected_track} track with {selected_difficulty} difficulty.")
+        st.session_state.settings_confirmed = False
+        confirm_button = st.button("Confirm Settings", type="primary", use_container_width=True, disabled=True)
+    else:
+        st.success(f"✅ {len(available_questions)} questions available")
+        
+        # Confirm button
+        if st.button("Confirm Settings", type="primary", use_container_width=True):
+            # Save selected values in session_state
+            st.session_state.selected_track = selected_track
+            st.session_state.selected_difficulty = selected_difficulty
+            st.session_state.selected_num_questions = num_questions
+            
+            # Re-select questions from CSV based on new settings
+            n_questions = min(num_questions, len(available_questions))
+            st.session_state.selected_questions = available_questions.sample(n=n_questions)
+            st.session_state.current_q = 0
+            st.session_state.user_answers = []
+            st.session_state.conversation = []
+            st.session_state.interview_finished = False
+            st.session_state.questions_asked = []
+            st.session_state.settings_confirmed = True
+            st.session_state.show_interview = True
+            st.rerun()
 
     
     # Agent personality options
@@ -200,6 +211,13 @@ if st.session_state.model_loaded and st.session_state.show_interview:
             (df['Category'] == confirmed_track) & 
             (df['Difficulty'] == confirmed_difficulty)
         ]
+        
+        # Check if we have questions for the confirmed settings
+        if len(filtered_df) == 0:
+            st.error(f"No questions available for {confirmed_track} track with {confirmed_difficulty} difficulty.")
+            st.session_state.settings_confirmed = False
+            st.stop()
+        
         n_questions = min(confirmed_num_questions, len(filtered_df))
         st.session_state.selected_questions = filtered_df.sample(n=n_questions)
 
@@ -247,8 +265,19 @@ if st.session_state.model_loaded and st.session_state.show_interview:
         # Use confirmed settings
         confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
         
+        # Check if we have questions to ask
+        if st.session_state.selected_questions is None or len(st.session_state.selected_questions) == 0:
+            st.error("No questions available for the selected criteria. Please choose different settings.")
+            st.stop()
+            
         if st.session_state.get('current_q', 0) < confirmed_num_questions:
             current_q_index = st.session_state.get('current_q', 0)
+            
+            # Make sure the current index is within bounds
+            if current_q_index >= len(st.session_state.selected_questions):
+                st.error("Question index out of bounds. Please restart the interview.")
+                st.stop()
+                
             q_row = st.session_state.selected_questions.iloc[current_q_index]
             
             # Interviewer asks question (only if not already asked)
