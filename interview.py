@@ -114,7 +114,7 @@ def load_model_components():
     except Exception as e:
         st.error(f"Error loading model: {e}")
         st.info("Using fallback responses for the interview.")
-        st.session_state.model_loaded = True  # Allow interview to proceed with fallbacks
+        st.session_state.model_loaded = True  
         st.session_state.model_loading = False
         st.session_state.show_interview = True
         return None, None
