@@ -81,7 +81,7 @@ with st.sidebar:
     difficulties = df['Difficulty'].unique().tolist()
     difficulty = st.selectbox("Select Difficulty:", difficulties)
     
-    num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=3)
+    num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=1)
     
     # Agent personality options
     st.subheader("Agent Personalities")
