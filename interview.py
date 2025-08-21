@@ -117,6 +117,13 @@ with st.sidebar:
     
     num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=1)
     
+    # إضافة زر لتأكيد عدد الأسئلة
+    if st.button("Confirm Questions", type="primary", use_container_width=True):
+        st.session_state.questions_confirmed = True
+        st.session_state.selected_questions = None  # إعادة تعيين الأسئلة المحددة
+        st.session_state.initialized = False  # إعادة تهيئة حالة المقابلة
+        st.rerun()
+    
     # Agent personality options
     st.subheader("Agent Personalities")
     interviewer_style = st.selectbox(
@@ -142,6 +149,12 @@ if st.session_state.model_loaded and st.session_state.show_interview:
         st.session_state.interview_finished = False
         st.session_state.questions_asked = []  # Track which questions have been asked
         st.session_state.selected_questions = None
+        st.session_state.questions_confirmed = False  # حالة تأكيد الأسئلة
+
+    # التحقق من تأكيد عدد الأسئلة قبل المتابعة
+    if not st.session_state.get('questions_confirmed', False):
+        st.info("👆 Please confirm the number of questions in the sidebar to start the interview.")
+        st.stop()
 
     # Get selected questions based on current configuration
     if st.session_state.selected_questions is None:
