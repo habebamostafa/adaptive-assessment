@@ -16,7 +16,7 @@ def generate_text(prompt, max_len=200):
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # --- تحميل dataset ---
-df = pd.read_csv("data/Software Questions.csv")
+df = pd.read_csv("data/Software Questions.csv", encoding="latin-1")
 
 # --- Streamlit UI ---
 st.title("AI-Powered Interview Simulation with Crew")
