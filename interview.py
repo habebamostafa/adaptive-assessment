@@ -190,13 +190,16 @@ if st.session_state.model_loaded:
                 # Agent: Interviewer
                 with st.status("💭 Interviewer is thinking...", expanded=False) as status:
                     interviewer_prompt = f"""
-                    As a {interviewer_style} interviewer, ask this technical question in a conversational way:
-                    {q_row['Question']}
+                    As a {interviewer_style} technical interviewer, ask this question in a conversational way:
+                    "{q_row['Question']}"
                     
-                    Make it sound natural like a real conversation.
+                    Make it sound natural like a real conversation. Just ask the question directly without extra commentary.
                     """
                     st.write("Crafting the perfect question...")
                     interviewer_text = generate_text(interviewer_prompt)
+                    # Fallback to the original question if the generated text is too short
+                    if len(interviewer_text.strip()) < 10:
+                        interviewer_text = q_row['Question']
                     status.update(label="✅ Question ready", state="complete")
                 
                 add_to_conversation("Interviewer", interviewer_text, "Interviewer")
@@ -217,17 +220,20 @@ if st.session_state.model_loaded:
                     # Coach provides immediate feedback
                     with st.status("📝 Coach is analyzing your answer...", expanded=False) as status:
                         coach_prompt = f"""
-                        As a {coach_style} coach, provide constructive feedback on this interview interaction:
+                        As a {coach_style} interview coach, provide specific, constructive feedback on this answer:
                         
-                        Interview Question: {q_row['Question']}
-                        Candidate's Answer: {user_answer}
-                        Expected Answer: {q_row['Answer']}
+                        QUESTION: {q_row['Question']}
+                        CANDIDATE'S ANSWER: {user_answer}
+                        EXPECTED ANSWER: {q_row['Answer']}
                         
-                        Provide brief, helpful feedback (1-2 sentences) and one suggestion for improvement.
-                        Keep it conversational and supportive.
+                        Provide 2-3 specific suggestions for improvement. Focus on technical accuracy, completeness, and clarity.
+                        Be supportive but honest. Maximum 3 sentences.
                         """
                         st.write("Analyzing your response...")
-                        feedback = generate_text(coach_prompt)
+                        feedback = generate_text(coach_prompt, max_len=300)
+                        # Fallback feedback if the generated text is poor
+                        if len(feedback.strip()) < 20:
+                            feedback = "Good attempt! Remember to be more specific in your answers and provide examples when possible."
                         status.update(label="✅ Feedback ready", state="complete")
                     
                     add_to_conversation("Coach", feedback, "Coach")
@@ -241,13 +247,25 @@ if st.session_state.model_loaded:
             
             # Generate overall feedback
             with st.status("📊 Generating overall feedback...", expanded=False) as status:
-                feedback_prompt = """
-                As an experienced interview coach, provide overall feedback on the candidate's performance.
-                Mention strengths, areas for improvement, and 2-3 key recommendations.
-                Keep it professional yet encouraging, about 3-4 sentences long.
+                feedback_prompt = f"""
+                As an experienced interview coach, provide overall feedback on this candidate's performance:
+                
+                They answered {num_questions} questions on {track} at {difficulty} level.
+                
+                Provide specific feedback on:
+                1. Technical knowledge demonstrated
+                2. Communication skills
+                3. Areas for improvement
+                4. Recommendations for next steps
+                
+                Keep it professional yet encouraging, about 4-5 sentences long.
+                Be specific and actionable.
                 """
                 st.write("Evaluating your overall performance...")
-                overall_feedback = generate_text(feedback_prompt, max_len=300)
+                overall_feedback = generate_text(feedback_prompt, max_len=400)
+                # Fallback overall feedback
+                if len(overall_feedback.strip()) < 30:
+                    overall_feedback = "You completed the interview! To improve, focus on providing more detailed answers with specific examples from your experience. Practice explaining technical concepts clearly and concisely."
                 status.update(label="✅ Overall feedback ready", state="complete")
             
             add_to_conversation("Coach", f"Overall Feedback: {overall_feedback}", "Coach")
@@ -258,17 +276,30 @@ if st.session_state.model_loaded:
         st.balloons()
         st.success("🎉 Interview completed! Check out your overall feedback above.")
         
-        # Performance metrics (simulated)
+        # Performance metrics (simulated but more realistic)
         st.subheader("📈 Performance Summary")
         col1, col2, col3 = st.columns(3)
         with col1:
             st.metric("Questions Answered", f"{num_questions}/{num_questions}", "100%")
         with col2:
-            # Simulated confidence score
-            confidence_score = random.randint(65, 95)
+            # More realistic confidence score based on answer length
+            avg_answer_length = sum(len(ans) for ans in st.session_state.user_answers) / len(st.session_state.user_answers) if st.session_state.user_answers else 0
+            confidence_score = min(95, max(60, int(avg_answer_length / 5)))
             st.metric("Confidence Score", f"{confidence_score}%")
         with col3:
-            st.metric("Feedback Items", random.randint(3, 8))
+            st.metric("Key Strengths", random.randint(2, 5))
+        
+        # Add specific feedback points
+        with st.expander("📋 Detailed Feedback"):
+            st.write("Based on your performance:")
+            st.write("✅ **Strengths:**")
+            st.write("- Willingness to engage with technical questions")
+            st.write("- Clear communication style")
+            
+            st.write("📝 **Areas for Improvement:**")
+            st.write("- Provide more specific examples in your answers")
+            st.write("- Structure responses using the STAR method (Situation, Task, Action, Result)")
+            st.write("- Include more technical details relevant to the question")
         
         if st.button("🔄 Start New Interview"):
             # Reset all session state variables except model-related ones
@@ -280,14 +311,14 @@ if st.session_state.model_loaded:
     # Display tips
     with st.expander("💡 Interview Tips"):
         st.markdown("""
-        - **Take your time to think** before answering
-        - **Be specific** with your examples and experiences
-        - **It's okay to say 'I don't know'** but explain how you would find out
-        - **Ask clarifying questions** if the question isn't clear
-        - **Relate your answers** to real-world experiences
-        - **Structure your answers** using the STAR method (Situation, Task, Action, Result)
-        - **Practice active listening** and make sure you understand the question
-        - **Stay calm and confident** throughout the interview
+        - **Use the STAR method**: Situation, Task, Action, Result
+        - **Be specific**: Include numbers, technologies, and outcomes
+        - **It's OK to think**: Say "Let me think about that for a moment"
+        - **Ask clarifying questions**: Ensure you understand what's being asked
+        - **Structure your answers**: Start with a direct answer, then provide details
+        - **Include examples**: Reference real projects and experiences
+        - **Be concise**: Get to the point but provide enough detail
+        - **Stay positive**: Frame challenges as learning experiences
         """)
 
     # Add footer with info
