@@ -99,33 +99,65 @@ if not st.session_state.model_loaded:
         st.rerun()
 
 # Sidebar for configuration (always show)
+# --- Sidebar for configuration ---
 with st.sidebar:
     st.header("Interview Configuration")
-    
+
     # Display model status
     st.subheader("System Status")
     if st.session_state.model_loaded:
         st.success("✅ Model loaded successfully")
     else:
         st.warning("⏳ Model loading in progress")
-    
+
+    # Input options
     tracks = df['Category'].unique().tolist()
-    track = st.selectbox("Select Track:", tracks)
-    
     difficulties = df['Difficulty'].unique().tolist()
-    difficulty = st.selectbox("Select Difficulty:", difficulties)
-    
-    num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=1)
-    
-    # إضافة زر لتأكيد جميع إعدادات المقابلة
+
+    # استخدم القيم المؤكدة إذا موجودة
+    selected_track = st.selectbox(
+        "Select Track:",
+        tracks,
+        index=tracks.index(st.session_state.get('selected_track', tracks[0]))
+    )
+
+    selected_difficulty = st.selectbox(
+        "Select Difficulty:",
+        difficulties,
+        index=difficulties.index(st.session_state.get('selected_difficulty', difficulties[0]))
+    )
+
+    num_questions = st.number_input(
+        "Number of Questions:",
+        min_value=1,
+        max_value=10,
+        value=st.session_state.get('selected_num_questions', 1)
+    )
+
+    # Confirm button
     if st.button("Confirm Settings", type="primary", use_container_width=True):
-        st.session_state.settings_confirmed = True
-        st.session_state.selected_track = track
-        st.session_state.selected_difficulty = difficulty
+        # حفظ القيم المختارة في session_state
+        st.session_state.selected_track = selected_track
+        st.session_state.selected_difficulty = selected_difficulty
         st.session_state.selected_num_questions = num_questions
-        st.session_state.selected_questions = None  # إعادة تعيين الأسئلة المحددة
-        st.session_state.initialized = False  # إعادة تهيئة حالة المقابلة
-        st.rerun()
+        # إعادة اختيار الأسئلة من CSV بناءً على الإعدادات الجديدة
+        st.session_state.selected_questions = df[
+            (df['Category'] == selected_track) &
+            (df['Difficulty'] == selected_difficulty)
+        ].sample(n=min(num_questions, len(df[
+            (df['Category'] == selected_track) &
+            (df['Difficulty'] == selected_difficulty)
+        ])))
+        # إعادة تهيئة المتغيرات المتعلقة بالمقابلة
+        st.session_state.current_q = 0
+        st.session_state.user_answers = []
+        st.session_state.conversation = []
+        st.session_state.interview_finished = False
+        st.session_state.questions_asked = []
+        st.session_state.settings_confirmed = True
+        st.session_state.show_interview = True
+        st.experimental_rerun()
+
     
     # Agent personality options
     st.subheader("Agent Personalities")
