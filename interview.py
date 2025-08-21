@@ -4,7 +4,7 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import time
 
 # --- Model Setup with Proper Caching ---
-MODEL_NAME = "google/flan-t5-small"  # Better model for text generation
+MODEL_NAME = "google/flan-t5-large"  # Better model for text generation
 HF_TOKEN = st.secrets.get("HF_TOKEN", None)
 
 # Initialize session state for model loading
