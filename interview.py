@@ -69,6 +69,7 @@ if 'current_q' not in st.session_state:
     st.session_state.conversation = []  # Stores the entire conversation
     st.session_state.selected_questions = df[(df['Category']==track) & (df['Difficulty']==difficulty)].sample(n=num_questions)
     st.session_state.interview_finished = False
+    st.session_state.questions_asked = []  # Track which questions have been asked
 
 # Function to add messages to the conversation
 def add_to_conversation(role, message, agent_type=None):
@@ -79,7 +80,7 @@ def add_to_conversation(role, message, agent_type=None):
     })
 
 # Initialize conversation if empty
-if not st.session_state.conversation:
+if len(st.session_state.conversation) == 0:
     add_to_conversation("System", f"Starting a {difficulty} level interview for {track} track with {num_questions} questions.")
 
 # Display conversation
@@ -108,7 +109,9 @@ if not st.session_state.interview_finished:
         q_row = st.session_state.selected_questions.iloc[st.session_state.current_q]
         
         # Interviewer asks question (only if not already asked)
-        if not any(msg.get("question_id") == st.session_state.current_q for msg in st.session_state.conversation):
+        question_already_asked = any(msg.get("question_id") == st.session_state.current_q for msg in st.session_state.conversation)
+        
+        if not question_already_asked:
             # Agent: Interviewer
             interviewer_prompt = f"""
             As a {interviewer_style} interviewer, ask this technical question in a conversational way:
@@ -119,6 +122,7 @@ if not st.session_state.interview_finished:
             interviewer_text = generate_text(interviewer_prompt)
             add_to_conversation("Interviewer", interviewer_text, "Interviewer")
             st.session_state.conversation[-1]["question_id"] = st.session_state.current_q
+            st.session_state.questions_asked.append(st.session_state.current_q)
             st.experimental_rerun()
         
         # Candidate answers
