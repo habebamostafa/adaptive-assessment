@@ -117,9 +117,12 @@ with st.sidebar:
     
     num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=1)
     
-    # إضافة زر لتأكيد عدد الأسئلة
-    if st.button("Confirm Questions", type="primary", use_container_width=True):
-        st.session_state.questions_confirmed = True
+    # إضافة زر لتأكيد جميع إعدادات المقابلة
+    if st.button("Confirm Settings", type="primary", use_container_width=True):
+        st.session_state.settings_confirmed = True
+        st.session_state.selected_track = track
+        st.session_state.selected_difficulty = difficulty
+        st.session_state.selected_num_questions = num_questions
         st.session_state.selected_questions = None  # إعادة تعيين الأسئلة المحددة
         st.session_state.initialized = False  # إعادة تهيئة حالة المقابلة
         st.rerun()
@@ -138,7 +141,7 @@ with st.sidebar:
     
     st.sidebar.info(f"📋 Loaded {len(df)} questions across {df['Category'].nunique()} categories")
 
-# Only show the interview section after model is loaded
+# Only show the interview section after model is loaded and settings confirmed
 if st.session_state.model_loaded and st.session_state.show_interview:
     # --- Initialize session_state with default values ---
     if 'initialized' not in st.session_state:
@@ -149,18 +152,23 @@ if st.session_state.model_loaded and st.session_state.show_interview:
         st.session_state.interview_finished = False
         st.session_state.questions_asked = []  # Track which questions have been asked
         st.session_state.selected_questions = None
-        st.session_state.questions_confirmed = False  # حالة تأكيد الأسئلة
+        st.session_state.settings_confirmed = False  # حالة تأكيد الإعدادات
 
-    # التحقق من تأكيد عدد الأسئلة قبل المتابعة
-    if not st.session_state.get('questions_confirmed', False):
-        st.info("👆 Please confirm the number of questions in the sidebar to start the interview.")
+    # التحقق من تأكيد الإعدادات قبل المتابعة
+    if not st.session_state.get('settings_confirmed', False):
+        st.info("👆 Please confirm your interview settings in the sidebar to start the interview.")
         st.stop()
 
     # Get selected questions based on current configuration
     if st.session_state.selected_questions is None:
+        # استخدام الإعدادات المؤكدة بدلاً من القيم الحالية
+        confirmed_track = st.session_state.get('selected_track', track)
+        confirmed_difficulty = st.session_state.get('selected_difficulty', difficulty)
+        confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
+        
         st.session_state.selected_questions = df[
-            (df['Category']==track) & (df['Difficulty']==difficulty)
-        ].sample(n=min(num_questions, len(df[(df['Category']==track) & (df['Difficulty']==difficulty)])))
+            (df['Category'] == confirmed_track) & (df['Difficulty'] == confirmed_difficulty)
+        ].sample(n=min(confirmed_num_questions, len(df[(df['Category'] == confirmed_track) & (df['Difficulty'] == confirmed_difficulty)])))
 
     # Function to add messages to the conversation
     def add_to_conversation(role, message, agent_type=None):
@@ -174,7 +182,12 @@ if st.session_state.model_loaded and st.session_state.show_interview:
 
     # Initialize conversation if empty
     if len(st.session_state.get('conversation', [])) == 0:
-        add_to_conversation("System", f"Starting a {difficulty} level interview for {track} track with {num_questions} questions.")
+        # استخدام الإعدادات المؤكدة
+        confirmed_track = st.session_state.get('selected_track', track)
+        confirmed_difficulty = st.session_state.get('selected_difficulty', difficulty)
+        confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
+        
+        add_to_conversation("System", f"Starting a {confirmed_difficulty} level interview for {confirmed_track} track with {confirmed_num_questions} questions.")
 
     # Display conversation
     st.subheader("Interview Conversation")
@@ -198,7 +211,10 @@ if st.session_state.model_loaded and st.session_state.show_interview:
 
     # Interview process
     if not st.session_state.get('interview_finished', False):
-        if st.session_state.get('current_q', 0) < num_questions:
+        # استخدام الإعدادات المؤكدة
+        confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
+        
+        if st.session_state.get('current_q', 0) < confirmed_num_questions:
             current_q_index = st.session_state.get('current_q', 0)
             q_row = st.session_state.selected_questions.iloc[current_q_index]
             
@@ -264,12 +280,17 @@ if st.session_state.model_loaded and st.session_state.show_interview:
             # Interview finished - provide overall feedback
             st.session_state.interview_finished = True
             
+            # استخدام الإعدادات المؤكدة
+            confirmed_track = st.session_state.get('selected_track', track)
+            confirmed_difficulty = st.session_state.get('selected_difficulty', difficulty)
+            confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
+            
             # Generate overall feedback
             with st.status("📊 Generating overall feedback...", expanded=False) as status:
                 feedback_prompt = f"""
                 As an experienced interview coach, provide overall feedback on this candidate's performance:
                 
-                They answered {num_questions} questions on {track} at {difficulty} level.
+                They answered {confirmed_num_questions} questions on {confirmed_track} at {confirmed_difficulty} level.
                 
                 Provide specific feedback on:
                 1. Technical knowledge demonstrated
@@ -285,7 +306,7 @@ if st.session_state.model_loaded and st.session_state.show_interview:
                 # Fallback overall feedback
                 if len(overall_feedback.strip()) < 30:
                     overall_feedback = "You completed the interview! To improve, focus on providing more detailed answers with specific examples from your experience. Practice explaining technical concepts clearly and concisely."
-                status.update(label="✅ Overall feedback ready", state="complete")
+                status.update(label("✅ Overall feedback ready", state="complete"))
             
             add_to_conversation("Coach", f"Overall Feedback: {overall_feedback}", "Coach")
             st.rerun()
@@ -295,11 +316,14 @@ if st.session_state.model_loaded and st.session_state.show_interview:
         st.balloons()
         st.success("🎉 Interview completed! Check out your overall feedback above.")
         
+        # استخدام الإعدادات المؤكدة
+        confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
+        
         # Performance metrics (simulated but more realistic)
         st.subheader("📈 Performance Summary")
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Questions Answered", f"{num_questions}/{num_questions}", "100%")
+            st.metric("Questions Answered", f"{confirmed_num_questions}/{confirmed_num_questions}", "100%")
         with col2:
             # More realistic confidence score based on answer length
             avg_answer_length = sum(len(ans) for ans in st.session_state.user_answers) / len(st.session_state.user_answers) if st.session_state.user_answers else 0
