@@ -95,7 +95,7 @@ with st.sidebar:
         st.warning("⏳ Model loading in progress")
 
     # Input options
-    tracks = ["Artificial Intelligence ,Software Development","Web Devolopment","Mobile App", "Data Science", "Product Management", "UX Design", "Marketing"]
+    tracks = ["Artificial Intelligence" ,"Software Development","Web Devolopment","Mobile App", "Data Science", "Product Management", "UX Design", "Marketing"]
     difficulties = ["Easy", "Medium", "Hard"]
     
     selected_track = st.selectbox(
