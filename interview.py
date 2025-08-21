@@ -62,17 +62,22 @@ with st.sidebar:
         ["Encouraging", "Constructive", "Direct", "Detailed"]
     )
 
-# --- إعداد session_state ---
-if 'current_q' not in st.session_state:
+# --- Initialize session_state with default values ---
+if 'initialized' not in st.session_state:
+    st.session_state.initialized = True
     st.session_state.current_q = 0
     st.session_state.user_answers = []
     st.session_state.conversation = []  # Stores the entire conversation
-    st.session_state.selected_questions = df[(df['Category']==track) & (df['Difficulty']==difficulty)].sample(n=num_questions)
     st.session_state.interview_finished = False
     st.session_state.questions_asked = []  # Track which questions have been asked
 
+# Get selected questions based on current configuration
+selected_questions = df[(df['Category']==track) & (df['Difficulty']==difficulty)].sample(n=num_questions)
+
 # Function to add messages to the conversation
 def add_to_conversation(role, message, agent_type=None):
+    if 'conversation' not in st.session_state:
+        st.session_state.conversation = []
     st.session_state.conversation.append({
         "role": role,
         "message": message,
@@ -80,7 +85,7 @@ def add_to_conversation(role, message, agent_type=None):
     })
 
 # Initialize conversation if empty
-if len(st.session_state.conversation) == 0:
+if len(st.session_state.get('conversation', [])) == 0:
     add_to_conversation("System", f"Starting a {difficulty} level interview for {track} track with {num_questions} questions.")
 
 # Display conversation
@@ -89,7 +94,7 @@ conversation_container = st.container()
 
 # Display the conversation in a chat-like format
 with conversation_container:
-    for msg in st.session_state.conversation:
+    for msg in st.session_state.get('conversation', []):
         if msg["role"] == "System":
             with st.chat_message("system"):
                 st.write(f"📢 {msg['message']}")
@@ -104,12 +109,13 @@ with conversation_container:
                 st.write(f"**You**: {msg['message']}")
 
 # Interview process
-if not st.session_state.interview_finished:
-    if st.session_state.current_q < num_questions:
-        q_row = st.session_state.selected_questions.iloc[st.session_state.current_q]
+if not st.session_state.get('interview_finished', False):
+    if st.session_state.get('current_q', 0) < num_questions:
+        current_q_index = st.session_state.get('current_q', 0)
+        q_row = selected_questions.iloc[current_q_index]
         
         # Interviewer asks question (only if not already asked)
-        question_already_asked = any(msg.get("question_id") == st.session_state.current_q for msg in st.session_state.conversation)
+        question_already_asked = any(msg.get("question_id") == current_q_index for msg in st.session_state.get('conversation', []))
         
         if not question_already_asked:
             # Agent: Interviewer
@@ -121,13 +127,13 @@ if not st.session_state.interview_finished:
             """
             interviewer_text = generate_text(interviewer_prompt)
             add_to_conversation("Interviewer", interviewer_text, "Interviewer")
-            st.session_state.conversation[-1]["question_id"] = st.session_state.current_q
-            st.session_state.questions_asked.append(st.session_state.current_q)
-            st.experimental_rerun()
+            st.session_state.conversation[-1]["question_id"] = current_q_index
+            st.session_state.questions_asked.append(current_q_index)
+            st.rerun()
         
         # Candidate answers
         with st.form(key="answer_form"):
-            user_answer = st.text_area("Your answer:", key=f"answer_{st.session_state.current_q}", height=150)
+            user_answer = st.text_area("Your answer:", key=f"answer_{current_q_index}", height=150)
             submit_answer = st.form_submit_button("Submit Answer")
             
             if submit_answer and user_answer.strip():
@@ -149,7 +155,7 @@ if not st.session_state.interview_finished:
                 add_to_conversation("Coach", feedback, "Coach")
                 
                 st.session_state.current_q += 1
-                st.experimental_rerun()
+                st.rerun()
     
     else:
         # Interview finished - provide overall feedback
@@ -164,7 +170,7 @@ if not st.session_state.interview_finished:
         
         overall_feedback = generate_text(feedback_prompt, max_len=300)
         add_to_conversation("Coach", f"Overall Feedback: {overall_feedback}", "Coach")
-        st.experimental_rerun()
+        st.rerun()
 
 else:
     # Interview completed
@@ -172,9 +178,10 @@ else:
     st.success("🎉 Interview completed! Check out your overall feedback above.")
     
     if st.button("Start New Interview"):
+        # Reset all session state variables
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.experimental_rerun()
+        st.rerun()
 
 # Display tips
 with st.expander("💡 Interview Tips"):
