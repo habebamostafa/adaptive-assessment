@@ -60,33 +60,7 @@ def generate_text(prompt, max_len=150, temperature=0.7):
 
 def get_fallback_response(prompt):
     """Provide fallback responses when model fails"""
-    if "question" in prompt.lower():
-        questions = {
-            "Artificial Intelligence": [
-                "What is machine learning and how does it differ from traditional programming?",
-                "Explain the difference between supervised and unsupervised learning.",
-                "What are neural networks and how do they work?"
-            ],
-            "Software Development": [
-                "What is the difference between object-oriented and functional programming?",
-                "Explain the concept of version control and why it's important.",
-                "What are design patterns and can you give an example?"
-            ],
-            "Web Development": [
-                "What is the difference between frontend and backend development?",
-                "Explain how HTTP works and the difference between GET and POST requests.",
-                "What is responsive design and why is it important?"
-            ],
-            "Data Science": [
-                "What is the difference between correlation and causation?",
-                "Explain the steps in a typical data science project.",
-                "What is overfitting and how can you prevent it?"
-            ]
-        }
-        track = st.session_state.get('selected_track', 'Software Development')
-        return random.choice(questions.get(track, questions['Software Development']))
-    
-    elif "feedback" in prompt.lower():
+    if "feedback" in prompt.lower():
         feedbacks = [
             "Good start! Try to be more specific and provide concrete examples in your answer.",
             "Your answer shows understanding. Consider elaborating with real-world applications.",
@@ -94,7 +68,6 @@ def get_fallback_response(prompt):
             "Nice explanation! Try to structure your answer with clear points next time."
         ]
         return random.choice(feedbacks)
-    
     else:
         return "Thank you for your response. Let's continue with the next question."
 
@@ -298,16 +271,73 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
             # Generate question if needed
             if len(st.session_state.questions) <= current_q_index:
                 with st.status("💭 Preparing next question...", expanded=False) as status:
-                    question_prompt = f"""Generate a {st.session_state.selected_difficulty.lower()} level interview question for {st.session_state.selected_track}. 
-                    Question {current_q_index + 1}: Ask about a core concept or skill.
-                    Make it specific and practical. Question only:"""
+                    # Create specific examples based on track and difficulty
+                    track_examples = {
+                        "Artificial Intelligence": {
+                            "Easy": "real-world ML project, data preprocessing challenge, basic algorithm selection",
+                            "Medium": "production ML system, model optimization, handling bias or drift",
+                            "Hard": "distributed AI architecture, advanced deep learning, ethical AI implementation"
+                        },
+                        "Software Development": {
+                            "Easy": "debugging issue, code refactoring, API design",
+                            "Medium": "system architecture, performance optimization, integration challenges", 
+                            "Hard": "scalable distributed system, complex algorithm implementation, advanced design patterns"
+                        },
+                        "Web Development": {
+                            "Easy": "responsive design problem, basic functionality implementation, user experience issue",
+                            "Medium": "full-stack application design, performance optimization, security implementation",
+                            "Hard": "large-scale web architecture, advanced frontend/backend integration, complex state management"
+                        },
+                        "Data Science": {
+                            "Easy": "data cleaning task, basic analysis problem, simple visualization challenge",
+                            "Medium": "predictive modeling project, statistical analysis, data pipeline design",
+                            "Hard": "big data architecture, advanced statistical modeling, real-time analytics system"
+                        }
+                    }
+                    
+                    # Get previous questions to avoid repetition
+                    previous_topics = []
+                    if st.session_state.questions:
+                        for prev_q in st.session_state.questions:
+                            if "system" in prev_q.lower():
+                                previous_topics.append("system design")
+                            elif "data" in prev_q.lower():
+                                previous_topics.append("data handling")
+                            elif "performance" in prev_q.lower():
+                                previous_topics.append("optimization")
+                    
+                    previous_topics_text = ", ".join(previous_topics) if previous_topics else "none"
+                    
+                    difficulty_level = st.session_state.selected_difficulty.lower()
+                    track = st.session_state.selected_track
+                    examples = track_examples.get(track, {}).get(st.session_state.selected_difficulty, "practical project challenge")
+                    
+                    question_prompt = f"""You are an experienced technical interviewer conducting a {difficulty_level} level interview for a {track} position. 
+
+Create a realistic, specific interview question that:
+- Is scenario-based (like: "You're working on...", "A client needs...", "Your team is facing...")  
+- Focuses on practical problem-solving, not just theory
+- Is appropriate for {difficulty_level} level (examples: {examples})
+- Avoids topics already covered: {previous_topics_text}
+- Requires the candidate to walk through their thinking process
+- Is the type of question asked in real {track} interviews
+
+Generate only the question, make it conversational and specific:"""
                     
                     st.write("Crafting your question...")
-                    question = generate_text(question_prompt, max_len=100)
+                    question = generate_text(question_prompt, max_len=120, temperature=0.8)
+                    
+                    # If question is too short or generic, add more context
+                    if len(question.split()) < 10 or any(word in question.lower() for word in ['what is', 'define', 'explain the concept']):
+                        contextual_prompt = f"""Create a specific, scenario-based {difficulty_level} level interview question for {track}. 
+                        Start with a real-world situation like "You're building..." or "A company asks you to..." 
+                        Make it practical and detailed. Question:"""
+                        question = generate_text(contextual_prompt, max_len=100, temperature=0.9)
                     
                     # Generate expected answer for scoring
-                    answer_prompt = f"""Provide a comprehensive answer to: {question}
-                    Include key points and examples. Answer:"""
+                    answer_prompt = f"""As a {track} expert, provide key points that a good candidate should cover when answering: "{question}"
+                    
+                    List the main technical concepts, approaches, and considerations they should mention. Keep it concise:"""
                     
                     st.write("Preparing evaluation criteria...")
                     expected_answer = generate_text(answer_prompt, max_len=200)
@@ -350,14 +380,30 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
                     
                     # Generate coach feedback
                     with st.status("📝 Coach analyzing your response...", expanded=False) as status:
-                        feedback_prompt = f"""As an {st.session_state.coach_style.lower()} interview coach, provide brief constructive feedback.
-                        Question: {current_question}
-                        Answer: {user_answer}
-                        
-                        Give 2-3 specific improvement suggestions. Be supportive. Feedback:"""
+                        feedback_prompt = f"""You are an experienced {st.session_state.coach_style.lower()} interview coach providing feedback after this exchange:
+
+QUESTION: {current_question}
+CANDIDATE'S ANSWER: {user_answer}
+
+Provide specific, actionable feedback focusing on:
+- What they did well in their answer
+- 1-2 specific areas for improvement  
+- One concrete suggestion for how to strengthen their response
+
+Keep it supportive but honest, like a real interview coach. Feedback:"""
                         
                         st.write("Evaluating your response...")
-                        feedback = generate_text(feedback_prompt, max_len=150)
+                        feedback = generate_text(feedback_prompt, max_len=180, temperature=0.7)
+                        
+                        # Ensure feedback is constructive and not repetitive
+                        if len(feedback.strip()) < 20 or "feedback" in feedback.lower():
+                            fallback_feedbacks = [
+                                "Good approach! To strengthen your answer, try adding a specific example from your experience and explain your decision-making process step by step.",
+                                "You covered the basics well. Consider discussing potential challenges you might face and how you'd handle them to show deeper thinking.",
+                                "Nice structure! Next time, include metrics or outcomes to demonstrate the impact of your approach - this shows results-oriented thinking.",
+                                "Solid understanding! Try walking through your thought process more explicitly - interviewers want to see how you break down complex problems."
+                            ]
+                            feedback = random.choice(fallback_feedbacks)
                         
                         status.update(label="✅ Feedback ready", state="complete")
                     
@@ -371,14 +417,35 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
             
             # Generate final feedback
             with st.status("📊 Preparing your final evaluation...", expanded=False) as status:
-                final_prompt = f"""Provide overall interview feedback for {st.session_state.selected_track} candidate.
-                They completed {st.session_state.selected_num_questions} questions at {st.session_state.selected_difficulty} level.
+                # Create a summary of their performance
+                answer_lengths = [len(ans.split()) for ans in st.session_state.user_answers]
+                avg_length = sum(answer_lengths) / len(answer_lengths) if answer_lengths else 0
+                detailed_answers = sum(1 for length in answer_lengths if length > 25)
                 
-                Summarize: strengths, areas for improvement, and next steps. 
-                Keep it professional and encouraging. Overall assessment:"""
+                final_prompt = f"""You are an experienced interview coach providing final assessment for a {st.session_state.selected_track} candidate.
+
+INTERVIEW SUMMARY:
+- Position: {st.session_state.selected_track} 
+- Level: {st.session_state.selected_difficulty}
+- Questions completed: {st.session_state.selected_num_questions}
+- Average answer length: {int(avg_length)} words
+- Detailed responses: {detailed_answers}/{len(st.session_state.user_answers)}
+
+Provide a professional final evaluation covering:
+1. Overall performance assessment
+2. Key strengths observed
+3. Main areas for improvement  
+4. Specific next steps for interview preparation
+
+Be encouraging but realistic, like a real career coach. Final assessment:"""
                 
                 st.write("Compiling your performance summary...")
-                overall_feedback = generate_text(final_prompt, max_len=200)
+                overall_feedback = generate_text(final_prompt, max_len=250, temperature=0.6)
+                
+                # Ensure quality feedback
+                if len(overall_feedback.strip()) < 30:
+                    overall_feedback = f"""Overall, you demonstrated good engagement in this {st.session_state.selected_difficulty.lower()} level {st.session_state.selected_track} interview. Your responses show foundational understanding. To improve for future interviews: practice explaining your thought process step-by-step, include specific examples from your experience, and structure your answers using the STAR method (Situation, Task, Action, Result). Focus on being more concrete and detailed in your explanations."""
+                    
                 status.update(label="✅ Evaluation complete", state="complete")
             
             add_to_conversation("Coach", f"🎯 **Final Assessment**: {overall_feedback}", "Coach")
