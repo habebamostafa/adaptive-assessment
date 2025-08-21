@@ -4,8 +4,9 @@ import pandas as pd
 import random
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import time
+import os
 
-# --- Model Setup with Loading Indicators ---
+# --- Model Setup with Proper Caching ---
 MODEL_NAME = "google/flan-t5-large"
 HF_TOKEN = st.secrets.get("HF_TOKEN", None)
 
@@ -14,16 +15,11 @@ if 'model_loaded' not in st.session_state:
     st.session_state.model_loaded = False
 if 'model_loading' not in st.session_state:
     st.session_state.model_loading = False
-if 'tokenizer' not in st.session_state:
-    st.session_state.tokenizer = None
-if 'model' not in st.session_state:
-    st.session_state.model = None
 
 @st.cache_resource(show_spinner=False)
-def load_model():
-    """Load the model with caching and proper error handling"""
+def load_model_components():
+    """Load the model and tokenizer with proper caching"""
     try:
-        st.session_state.model_loading = True
         if HF_TOKEN:
             tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=HF_TOKEN)
             model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, token=HF_TOKEN)
@@ -31,50 +27,36 @@ def load_model():
             tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
             model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
         
-        # Store in session state
-        st.session_state.tokenizer = tokenizer
-        st.session_state.model = model
-        st.session_state.model_loading = False
-        st.session_state.model_loaded = True
         return tokenizer, model
     except Exception as e:
-        st.session_state.model_loading = False
         st.error(f"Error loading model: {e}")
         st.stop()
 
-# Load model with progress indicator
-if not st.session_state.model_loaded and not st.session_state.model_loading:
-    with st.spinner("🚀 Loading AI model (this may take a minute)..."):
-        tokenizer, model = load_model()
-
-# Show loading state if model is still loading
-if st.session_state.model_loading:
-    st.info("⏳ Model is loading, please wait...")
-    st.progress(0, text="Downloading model components")
-    # Simulate progress since we can't get actual download progress
-    for i in range(100):
-        time.sleep(0.02)
-        st.progress(i + 1, text=f"Downloading model components ({i+1}%)")
-    st.rerun()
+# Load model components with caching
+if not st.session_state.model_loaded:
+    with st.spinner("🚀 Loading AI model (this may take a few minutes)..."):
+        tokenizer, model = load_model_components()
+        st.session_state.model_loaded = True
 
 def generate_text(prompt, max_len=200):
-    """Generate text with progress indicator"""
+    """Generate text with the loaded model"""
     try:
-        # Use the tokenizer and model from session state
-        if st.session_state.tokenizer is None or st.session_state.model is None:
-            return "Model not loaded yet. Please wait..."
-            
-        with st.spinner("🤔 Generating response..."):
-            inputs = st.session_state.tokenizer(prompt, return_tensors="pt")
-            outputs = st.session_state.model.generate(**inputs, max_length=max_len)
-            return st.session_state.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        inputs = tokenizer(prompt, return_tensors="pt")
+        outputs = model.generate(**inputs, max_length=max_len)
+        return tokenizer.decode(outputs[0], skip_special_tokens=True)
     except Exception as e:
         return f"Model error: {e}"
 
 # --- Load dataset ---
 try:
     with st.spinner("📊 Loading interview questions..."):
+        # Create data directory if it doesn't exist
+        os.makedirs("data", exist_ok=True)
         df = pd.read_csv("data/Software Questions.csv", encoding="latin-1")
+        
+        # Show a preview of available questions only after model is loaded
+        if st.session_state.model_loaded:
+            st.sidebar.info(f"📋 Loaded {len(df)} questions across {df['Category'].nunique()} categories")
 except FileNotFoundError:
     st.error("CSV file not found. Please make sure 'data/Software Questions.csv' exists.")
     st.stop()
@@ -83,9 +65,21 @@ except FileNotFoundError:
 st.title("🤖 AI-Powered Interview Simulation with CrewAI")
 st.markdown("Experience a realistic interview with multiple AI agents (Interviewer, Coach, and you as Candidate)!")
 
-# Sidebar for configuration
+# Show loading message until model is ready
+if not st.session_state.model_loaded:
+    st.info("⏳ Please wait while the AI model is loading...")
+    st.progress(0, text="Initializing interview system")
+    st.stop()
+
+# Sidebar for configuration - Only show after model is loaded
 with st.sidebar:
     st.header("Interview Configuration")
+    
+    # Display model status
+    st.subheader("System Status")
+    if st.session_state.model_loaded:
+        st.success("✅ Model loaded successfully")
+    
     tracks = df['Category'].unique().tolist()
     track = st.selectbox("Select Track:", tracks)
     
@@ -105,13 +99,6 @@ with st.sidebar:
         "Coach Style:",
         ["Encouraging", "Constructive", "Direct", "Detailed"]
     )
-    
-    # Display model status
-    st.subheader("System Status")
-    if st.session_state.model_loaded:
-        st.success("✅ Model loaded successfully")
-    else:
-        st.warning("⏳ Model loading...")
 
 # --- Initialize session_state with default values ---
 if 'initialized' not in st.session_state:
@@ -121,9 +108,13 @@ if 'initialized' not in st.session_state:
     st.session_state.conversation = []  # Stores the entire conversation
     st.session_state.interview_finished = False
     st.session_state.questions_asked = []  # Track which questions have been asked
+    st.session_state.selected_questions = None
 
 # Get selected questions based on current configuration
-selected_questions = df[(df['Category']==track) & (df['Difficulty']==difficulty)].sample(n=num_questions)
+if st.session_state.selected_questions is None:
+    st.session_state.selected_questions = df[
+        (df['Category']==track) & (df['Difficulty']==difficulty)
+    ].sample(n=min(num_questions, len(df[(df['Category']==track) & (df['Difficulty']==difficulty)])))
 
 # Function to add messages to the conversation
 def add_to_conversation(role, message, agent_type=None):
@@ -163,7 +154,7 @@ with conversation_container:
 if not st.session_state.get('interview_finished', False):
     if st.session_state.get('current_q', 0) < num_questions:
         current_q_index = st.session_state.get('current_q', 0)
-        q_row = selected_questions.iloc[current_q_index]
+        q_row = st.session_state.selected_questions.iloc[current_q_index]
         
         # Interviewer asks question (only if not already asked)
         question_already_asked = any(msg.get("question_id") == current_q_index for msg in st.session_state.get('conversation', []))
@@ -255,7 +246,7 @@ else:
     if st.button("🔄 Start New Interview"):
         # Reset all session state variables except model-related ones
         for key in list(st.session_state.keys()):
-            if key not in ['model_loaded', 'model_loading', 'tokenizer', 'model']:
+            if key not in ['model_loaded', 'model_loading']:
                 del st.session_state[key]
         st.rerun()
 
