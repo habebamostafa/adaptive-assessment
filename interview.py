@@ -415,38 +415,34 @@ Keep it supportive but honest, like a real interview coach. Feedback:"""
             # Interview completed
             st.session_state.interview_finished = True
             
-            # Generate final feedback
-            with st.status("📊 Preparing your final evaluation...", expanded=False) as status:
+            # Generate final feedback quickly
+            if 'final_feedback_generated' not in st.session_state:
                 # Create a summary of their performance
                 answer_lengths = [len(ans.split()) for ans in st.session_state.user_answers]
                 avg_length = sum(answer_lengths) / len(answer_lengths) if answer_lengths else 0
                 detailed_answers = sum(1 for length in answer_lengths if length > 25)
                 
-                final_prompt = f"""You are an experienced interview coach providing final assessment for a {st.session_state.selected_track} candidate.
-
-INTERVIEW SUMMARY:
-- Position: {st.session_state.selected_track} 
-- Level: {st.session_state.selected_difficulty}
-- Questions completed: {st.session_state.selected_num_questions}
-- Average answer length: {int(avg_length)} words
-- Detailed responses: {detailed_answers}/{len(st.session_state.user_answers)}
-
-Provide a professional final evaluation covering:
-1. Overall performance assessment
-2. Key strengths observed
-3. Main areas for improvement  
-4. Specific next steps for interview preparation
-
-Be encouraging but realistic, like a real career coach. Final assessment:"""
+                # Quick assessment based on performance metrics
+                performance_level = "good" if avg_length > 20 else "basic"
+                engagement_level = "high" if detailed_answers > st.session_state.selected_num_questions // 2 else "moderate"
                 
-                st.write("Compiling your performance summary...")
-                overall_feedback = generate_text(final_prompt, max_len=250, temperature=0.6)
-                
-                # Ensure quality feedback
-                if len(overall_feedback.strip()) < 30:
-                    overall_feedback = f"""Overall, you demonstrated good engagement in this {st.session_state.selected_difficulty.lower()} level {st.session_state.selected_track} interview. Your responses show foundational understanding. To improve for future interviews: practice explaining your thought process step-by-step, include specific examples from your experience, and structure your answers using the STAR method (Situation, Task, Action, Result). Focus on being more concrete and detailed in your explanations."""
-                    
-                status.update(label="✅ Evaluation complete", state="complete")
+                # Fast, template-based feedback with personalization
+                overall_feedback = f"""**Overall Performance**: You completed this {st.session_state.selected_difficulty.lower()} level {st.session_state.selected_track} interview with {performance_level} engagement.
+
+**Key Strengths**: 
+• Active participation in all {st.session_state.selected_num_questions} questions
+• {"Detailed responses showing good technical thinking" if engagement_level == "high" else "Willingness to tackle technical challenges"}
+
+**Areas for Improvement**:
+• Structure answers using STAR method (Situation, Task, Action, Result)  
+• Include more specific examples from your experience
+• {"Focus on explaining implementation details" if st.session_state.selected_track in ["Software Development", "Web Development"] else "Discuss real-world applications and case studies"}
+
+**Next Steps**: Practice mock interviews, prepare concrete examples, and focus on explaining your problem-solving process step-by-step."""
+
+                st.session_state.final_feedback_generated = overall_feedback
+            else:
+                overall_feedback = st.session_state.final_feedback_generated
             
             add_to_conversation("Coach", f"🎯 **Final Assessment**: {overall_feedback}", "Coach")
             st.rerun()
