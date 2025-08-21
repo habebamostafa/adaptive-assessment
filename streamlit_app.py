@@ -14,8 +14,8 @@ import requests
 import random
 
 # Enhanced imports from your existing modules
-from enhanced_environment import AdaptiveAssessmentEnv
-from enhanced_agent import RLAssessmentAgent
+from core.environment import AdaptiveAssessmentEnv
+from core.agent import RLAssessmentAgent
 from data.questions import get_adaptive_question, generate_interview_questions, _question_manager
 
 # Configure Streamlit page
