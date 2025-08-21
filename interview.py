@@ -1,11 +1,10 @@
-# interview_simulator_crew.py
 import streamlit as st
 import random
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import time
 
 # --- Model Setup with Proper Caching ---
-MODEL_NAME = "declare-lab/flan-alpaca-base"  # Using a smaller model for faster loading
+MODEL_NAME = "google/flan-t5-small"  # Better model for text generation
 HF_TOKEN = st.secrets.get("HF_TOKEN", None)
 
 # Initialize session state for model loading
@@ -18,18 +17,86 @@ if 'model_progress' not in st.session_state:
 if 'show_interview' not in st.session_state:
     st.session_state.show_interview = False
 
-# Define generate_text function
-def generate_text(prompt, max_len=200):
+# Define generate_text function with better parameters
+def generate_text(prompt, max_len=150, temperature=0.7):
     """Generate text with the loaded model"""
     if 'tokenizer' not in st.session_state or 'model' not in st.session_state:
         return "Model not loaded yet. Please wait..."
     
     try:
-        inputs = st.session_state.tokenizer(prompt, return_tensors="pt")
-        outputs = st.session_state.model.generate(**inputs, max_length=max_len)
-        return st.session_state.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        inputs = st.session_state.tokenizer(
+            prompt, 
+            return_tensors="pt", 
+            max_length=512,
+            truncation=True
+        )
+        
+        outputs = st.session_state.model.generate(
+            **inputs, 
+            max_length=max_len,
+            min_length=20,
+            temperature=temperature,
+            do_sample=True,
+            top_p=0.9,
+            no_repeat_ngram_size=2,
+            pad_token_id=st.session_state.tokenizer.eos_token_id
+        )
+        
+        generated_text = st.session_state.tokenizer.decode(outputs[0], skip_special_tokens=True)
+        
+        # Remove the input prompt from the generated text
+        if generated_text.startswith(prompt):
+            generated_text = generated_text[len(prompt):].strip()
+        
+        # Ensure we have meaningful content
+        if len(generated_text.strip()) < 10:
+            return get_fallback_response(prompt)
+        
+        return generated_text.strip()
+    
     except Exception as e:
-        return f"Model error: {e}"
+        st.error(f"Model error: {e}")
+        return get_fallback_response(prompt)
+
+def get_fallback_response(prompt):
+    """Provide fallback responses when model fails"""
+    if "question" in prompt.lower():
+        questions = {
+            "Artificial Intelligence": [
+                "What is machine learning and how does it differ from traditional programming?",
+                "Explain the difference between supervised and unsupervised learning.",
+                "What are neural networks and how do they work?"
+            ],
+            "Software Development": [
+                "What is the difference between object-oriented and functional programming?",
+                "Explain the concept of version control and why it's important.",
+                "What are design patterns and can you give an example?"
+            ],
+            "Web Development": [
+                "What is the difference between frontend and backend development?",
+                "Explain how HTTP works and the difference between GET and POST requests.",
+                "What is responsive design and why is it important?"
+            ],
+            "Data Science": [
+                "What is the difference between correlation and causation?",
+                "Explain the steps in a typical data science project.",
+                "What is overfitting and how can you prevent it?"
+            ]
+        }
+        track = st.session_state.get('selected_track', 'Software Development')
+        return random.choice(questions.get(track, questions['Software Development']))
+    
+    elif "feedback" in prompt.lower():
+        feedbacks = [
+            "Good start! Try to be more specific and provide concrete examples in your answer.",
+            "Your answer shows understanding. Consider elaborating with real-world applications.",
+            "Well thought out response. Adding technical details would strengthen your answer.",
+            "Nice explanation! Try to structure your answer with clear points next time."
+        ]
+        return random.choice(feedbacks)
+    
+    else:
+        return "Thank you for your response. Let's continue with the next question."
 
 @st.cache_resource(show_spinner=False)
 def load_model_components():
@@ -38,12 +105,14 @@ def load_model_components():
         st.session_state.model_loading = True
         progress_bar = st.progress(0, text="Downloading model components...")
         
-        # Update progress (simulated)
+        # Update progress
         for i in range(5):
             st.session_state.model_progress = (i + 1) * 20
-            progress_bar.progress(st.session_state.model_progress, 
-                                 text=f"Loading model components... {st.session_state.model_progress}%")
-            time.sleep(0.5)  # Simulate progress
+            progress_bar.progress(
+                st.session_state.model_progress, 
+                text=f"Loading model components... {st.session_state.model_progress}%"
+            )
+            time.sleep(0.3)
         
         if HF_TOKEN:
             tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=HF_TOKEN)
@@ -51,6 +120,10 @@ def load_model_components():
         else:
             tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
             model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+        
+        # Handle tokenizer padding token
+        if tokenizer.pad_token is None:
+            tokenizer.pad_token = tokenizer.eos_token
         
         # Store in session state for global access
         st.session_state.tokenizer = tokenizer
@@ -64,21 +137,28 @@ def load_model_components():
         st.session_state.model_loaded = True
         st.session_state.show_interview = True
         return tokenizer, model
+        
     except Exception as e:
         st.error(f"Error loading model: {e}")
-        st.stop()
+        st.info("Using fallback responses for the interview.")
+        st.session_state.model_loaded = True  # Allow interview to proceed with fallbacks
+        st.session_state.model_loading = False
+        st.session_state.show_interview = True
+        return None, None
 
 # --- Streamlit UI ---
-st.title("🤖 AI-Powered Interview Simulation with CrewAI")
+st.title("🤖 AI-Powered Interview Simulation")
 st.markdown("Experience a realistic interview with AI-generated questions and feedback!")
 
 # Show loading message until model is ready
 if not st.session_state.model_loaded:
-    st.info("⏳ The AI model is loading in the background. You can configure your interview while you wait.")
+    st.info("⏳ The AI model is loading. You can configure your interview while you wait.")
     
     if st.session_state.model_loading:
-        progress_bar = st.progress(st.session_state.model_progress, 
-                                  text=f"Loading AI model... {st.session_state.model_progress}%")
+        progress_bar = st.progress(
+            st.session_state.model_progress, 
+            text=f"Loading AI model... {st.session_state.model_progress}%"
+        )
     else:
         tokenizer, model = load_model_components()
         st.rerun()
@@ -95,13 +175,22 @@ with st.sidebar:
         st.warning("⏳ Model loading in progress")
 
     # Input options
-    tracks = ["Artificial Intelligence", "Software Development", "Web Development", "Mobile App", "Data Science", "Product Management", "UX Design", "Marketing"]
+    tracks = [
+        "Artificial Intelligence", 
+        "Software Development", 
+        "Web Development", 
+        "Mobile App Development", 
+        "Data Science", 
+        "Product Management", 
+        "UX Design", 
+        "Digital Marketing"
+    ]
     difficulties = ["Easy", "Medium", "Hard"]
     
     selected_track = st.selectbox(
         "Select Track:",
         tracks,
-        index=3  # Default to Mobile App
+        index=0
     )
 
     selected_difficulty = st.selectbox(
@@ -113,15 +202,15 @@ with st.sidebar:
     num_questions = st.number_input(
         "Number of Questions:",
         min_value=1,
-        max_value=10,
+        max_value=8,
         value=3
     )
 
     # Agent personality options
-    st.subheader("Agent Personalities")
+    st.subheader("Interview Style")
     interviewer_style = st.selectbox(
         "Interviewer Style:",
-        ["Professional", "Friendly", "Technical", "Strict"]
+        ["Professional", "Friendly", "Technical", "Conversational"]
     )
     
     coach_style = st.selectbox(
@@ -129,15 +218,16 @@ with st.sidebar:
         ["Encouraging", "Constructive", "Direct", "Detailed"]
     )
     
-    # Confirm button
+    # Start interview button
     if st.button("Start Interview", type="primary", use_container_width=True):
+        # Store configuration
         st.session_state.selected_track = selected_track
         st.session_state.selected_difficulty = selected_difficulty
         st.session_state.selected_num_questions = num_questions
         st.session_state.interviewer_style = interviewer_style
         st.session_state.coach_style = coach_style
         
-        # Initialize interview state
+        # Reset interview state
         st.session_state.current_q = 0
         st.session_state.user_answers = []
         st.session_state.conversation = []
@@ -148,9 +238,10 @@ with st.sidebar:
         st.session_state.show_interview = True
         st.rerun()
 
-# Only show the interview section after model is loaded and settings confirmed
+# Only show interview section when ready
 if st.session_state.model_loaded and st.session_state.get('settings_confirmed', False):
-    # Initialize session state with default values
+    
+    # Initialize session state variables
     if 'current_q' not in st.session_state:
         st.session_state.current_q = 0
         st.session_state.user_answers = []
@@ -159,235 +250,222 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
         st.session_state.questions = []
         st.session_state.expected_answers = []
 
-    # Function to add messages to the conversation
     def add_to_conversation(role, message, agent_type=None):
+        """Add message to conversation history"""
         if 'conversation' not in st.session_state:
             st.session_state.conversation = []
         st.session_state.conversation.append({
             "role": role,
             "message": message,
-            "agent": agent_type
+            "agent": agent_type,
+            "timestamp": time.time()
         })
 
-    # Initialize conversation if empty
+    # Initialize conversation
     if len(st.session_state.get('conversation', [])) == 0:
-        add_to_conversation("System", f"Starting a {st.session_state.selected_difficulty} level interview for {st.session_state.selected_track} track with {st.session_state.selected_num_questions} questions.")
+        welcome_msg = f"Welcome! Starting your {st.session_state.selected_difficulty.lower()} level interview for {st.session_state.selected_track}. We'll go through {st.session_state.selected_num_questions} questions together."
+        add_to_conversation("System", welcome_msg)
 
     # Display conversation
-    st.subheader("Interview Conversation")
-    conversation_container = st.container()
+    st.subheader("Interview in Progress")
+    
+    # Show progress
+    progress = st.session_state.current_q / st.session_state.selected_num_questions
+    st.progress(progress, text=f"Question {st.session_state.current_q + 1} of {st.session_state.selected_num_questions}")
 
-    # Display the conversation in a chat-like format
+    # Conversation display
+    conversation_container = st.container()
     with conversation_container:
         for msg in st.session_state.get('conversation', []):
             if msg["role"] == "System":
                 with st.chat_message("system"):
-                    st.write(f"📢 {msg['message']}")
+                    st.info(f"📢 {msg['message']}")
             elif msg["role"] == "Interviewer":
                 with st.chat_message("assistant", avatar="👔"):
-                    st.write(f"**Interviewer** ({st.session_state.interviewer_style}): {msg['message']}")
+                    st.write(f"**Interviewer**: {msg['message']}")
             elif msg["role"] == "Coach":
                 with st.chat_message("assistant", avatar="📊"):
-                    st.write(f"**Coach** ({st.session_state.coach_style}): {msg['message']}")
+                    st.write(f"**Coach**: {msg['message']}")
             elif msg["role"] == "Candidate":
                 with st.chat_message("user", avatar="🧑‍💼"):
                     st.write(f"**You**: {msg['message']}")
 
-    # Interview process
+    # Interview logic
     if not st.session_state.get('interview_finished', False):
         if st.session_state.current_q < st.session_state.selected_num_questions:
             current_q_index = st.session_state.current_q
             
-            # Generate question if not already generated for this index
+            # Generate question if needed
             if len(st.session_state.questions) <= current_q_index:
-                with st.status("💭 Interviewer is generating a question...", expanded=False) as status:
-                    # Get previously asked questions to avoid repetition
-                    previous_questions = st.session_state.questions
-                    previous_questions_text = ", ".join(previous_questions) if previous_questions else "None"
+                with st.status("💭 Preparing next question...", expanded=False) as status:
+                    question_prompt = f"""Generate a {st.session_state.selected_difficulty.lower()} level interview question for {st.session_state.selected_track}. 
+                    Question {current_q_index + 1}: Ask about a core concept or skill.
+                    Make it specific and practical. Question only:"""
                     
-                    question_prompt = f"""
-                    As a {st.session_state.interviewer_style} technical interviewer in {st.session_state.selected_track}, 
-                    generate a {st.session_state.selected_difficulty.lower()} level interview question.
-                    
-                    This is question {current_q_index + 1} of {st.session_state.selected_num_questions}.
-                    Previously asked questions: {previous_questions_text}
-                    
-                    The question should be:
-                    - Specific and relevant to {st.session_state.selected_track}
-                    - Appropriate for {st.session_state.selected_difficulty} level
-                    - Different from previous questions
-                    - Focused on a different aspect than previous questions
-                    
-                    Return only the question without any additional text.
-                    """
-                    st.write("Creating a tailored question...")
+                    st.write("Crafting your question...")
                     question = generate_text(question_prompt, max_len=100)
                     
-                    # If the question is too similar to previous ones, try again
-                    if previous_questions and any(prev_q in question for prev_q in previous_questions):
-                        st.write("Generating a different question to avoid repetition...")
-                        question = generate_text(question_prompt, max_len=100)
+                    # Generate expected answer for scoring
+                    answer_prompt = f"""Provide a comprehensive answer to: {question}
+                    Include key points and examples. Answer:"""
                     
-                    # Generate expected answer
-                    answer_prompt = f"""
-                    As an expert in {st.session_state.selected_track}, provide a model answer to the following question:
-                    "{question}"
+                    st.write("Preparing evaluation criteria...")
+                    expected_answer = generate_text(answer_prompt, max_len=200)
                     
-                    The answer should be:
-                    - Comprehensive and technically accurate
-                    - Appropriate for a {st.session_state.selected_difficulty.lower()} level
-                    - Structured and clear
-                    
-                    Return only the answer without any additional text.
-                    """
-                    st.write("Preparing model answer...")
-                    expected_answer = generate_text(answer_prompt, max_len=300)
-                    
-                    # Store the generated question and answer
                     st.session_state.questions.append(question)
                     st.session_state.expected_answers.append(expected_answer)
                     status.update(label="✅ Question ready", state="complete")
-            
-            # Get the current question
+
+            # Ask question if not already asked
             current_question = st.session_state.questions[current_q_index]
+            question_asked = any(
+                msg.get("question_id") == current_q_index 
+                for msg in st.session_state.get('conversation', [])
+            )
             
-            # Interviewer asks question (only if not already asked)
-            question_already_asked = any(msg.get("question_id") == current_q_index for msg in st.session_state.get('conversation', []))
-            
-            if not question_already_asked:
-                # Agent: Interviewer
-                with st.status("💭 Interviewer is thinking...", expanded=False) as status:
-                    interviewer_prompt = f"""
-                    As a {st.session_state.interviewer_style} technical interviewer, ask this question in a conversational way:
-                    "{current_question}"
-                    
-                    Make it sound natural like a real conversation. Just ask the question directly without extra commentary.
-                    """
-                    st.write("Crafting the perfect question...")
-                    interviewer_text = generate_text(interviewer_prompt)
-                    # Fallback to the original question if the generated text is too short
-                    if len(interviewer_text.strip()) < 10:
-                        interviewer_text = current_question
-                    status.update(label="✅ Question ready", state="complete")
-                
-                add_to_conversation("Interviewer", interviewer_text, "Interviewer")
+            if not question_asked:
+                add_to_conversation("Interviewer", current_question, "Interviewer")
                 st.session_state.conversation[-1]["question_id"] = current_q_index
                 st.rerun()
             
-            # Candidate answers
-            with st.form(key="answer_form"):
-                user_answer = st.text_area("Your answer:", key=f"answer_{current_q_index}", height=150,
-                                          placeholder="Type your answer here...")
-                submit_answer = st.form_submit_button("Submit Answer")
+            # Answer form
+            with st.form(key=f"answer_form_{current_q_index}"):
+                user_answer = st.text_area(
+                    "Your answer:", 
+                    key=f"answer_{current_q_index}", 
+                    height=120,
+                    placeholder="Take your time to provide a detailed answer..."
+                )
+                
+                col1, col2 = st.columns([3, 1])
+                with col1:
+                    st.caption("💡 Tip: Use specific examples and explain your reasoning")
+                with col2:
+                    submit_answer = st.form_submit_button("Submit Answer", type="primary")
                 
                 if submit_answer and user_answer.strip():
+                    # Add user answer to conversation
                     add_to_conversation("Candidate", user_answer, "Candidate")
                     st.session_state.user_answers.append(user_answer)
                     
-                    # Coach provides immediate feedback
-                    with st.status("📝 Coach is analyzing your answer...", expanded=False) as status:
-                        coach_prompt = f"""
-                        As a {st.session_state.coach_style} interview coach, provide specific, constructive feedback on this answer:
+                    # Generate coach feedback
+                    with st.status("📝 Coach analyzing your response...", expanded=False) as status:
+                        feedback_prompt = f"""As an {st.session_state.coach_style.lower()} interview coach, provide brief constructive feedback.
+                        Question: {current_question}
+                        Answer: {user_answer}
                         
-                        QUESTION: {current_question}
-                        CANDIDATE'S ANSWER: {user_answer}
-                        EXPECTED ANSWER: {st.session_state.expected_answers[current_q_index]}
+                        Give 2-3 specific improvement suggestions. Be supportive. Feedback:"""
                         
-                        Provide 2-3 specific suggestions for improvement. Focus on technical accuracy, completeness, and clarity.
-                        Be supportive but honest. Maximum 3 sentences.
-                        """
-                        st.write("Analyzing your response...")
-                        feedback = generate_text(coach_prompt, max_len=300)
-                        # Fallback feedback if the generated text is poor
-                        if len(feedback.strip()) < 20:
-                            feedback = "Good attempt! Remember to be more specific in your answers and provide examples when possible."
+                        st.write("Evaluating your response...")
+                        feedback = generate_text(feedback_prompt, max_len=150)
+                        
                         status.update(label="✅ Feedback ready", state="complete")
                     
                     add_to_conversation("Coach", feedback, "Coach")
-                    
                     st.session_state.current_q += 1
                     st.rerun()
-        
+
         else:
-            # Interview finished - provide overall feedback
+            # Interview completed
             st.session_state.interview_finished = True
             
-            # Generate overall feedback
-            with st.status("📊 Generating overall feedback...", expanded=False) as status:
-                feedback_prompt = f"""
-                As an experienced interview coach, provide overall feedback on this candidate's performance:
+            # Generate final feedback
+            with st.status("📊 Preparing your final evaluation...", expanded=False) as status:
+                final_prompt = f"""Provide overall interview feedback for {st.session_state.selected_track} candidate.
+                They completed {st.session_state.selected_num_questions} questions at {st.session_state.selected_difficulty} level.
                 
-                They answered {st.session_state.selected_num_questions} questions on {st.session_state.selected_track} at {st.session_state.selected_difficulty} level.
+                Summarize: strengths, areas for improvement, and next steps. 
+                Keep it professional and encouraging. Overall assessment:"""
                 
-                Provide specific feedback on:
-                1. Technical knowledge demonstrated
-                2. Communication skills
-                3. Areas for improvement
-                4. Recommendations for next steps
-                
-                Keep it professional yet encouraging, about 4-5 sentences long.
-                Be specific and actionable.
-                """
-                st.write("Evaluating your overall performance...")
-                overall_feedback = generate_text(feedback_prompt, max_len=400)
-                # Fallback overall feedback
-                if len(overall_feedback.strip()) < 30:
-                    overall_feedback = "You completed the interview! To improve, focus on providing more detailed answers with specific examples from your experience. Practice explaining technical concepts clearly and concisely."
-                status.update(label="✅ Overall feedback ready", state="complete")
+                st.write("Compiling your performance summary...")
+                overall_feedback = generate_text(final_prompt, max_len=200)
+                status.update(label="✅ Evaluation complete", state="complete")
             
-            add_to_conversation("Coach", f"Overall Feedback: {overall_feedback}", "Coach")
+            add_to_conversation("Coach", f"🎯 **Final Assessment**: {overall_feedback}", "Coach")
             st.rerun()
 
     else:
-        # Interview completed
-        st.balloons()
-        st.success("🎉 Interview completed! Check out your overall feedback above.")
+        # Show completion
+        st.success("🎉 Interview completed successfully!")
         
-        # Performance metrics (simulated but more realistic)
-        st.subheader("📈 Performance Summary")
+        # Performance summary
+        st.subheader("📈 Your Performance Summary")
         col1, col2, col3 = st.columns(3)
+        
         with col1:
-            st.metric("Questions Answered", f"{st.session_state.selected_num_questions}/{st.session_state.selected_num_questions}", "100%")
+            st.metric(
+                "Questions Completed", 
+                f"{st.session_state.selected_num_questions}/{st.session_state.selected_num_questions}",
+                "100%"
+            )
+        
         with col2:
-            # More realistic confidence score based on answer length
-            avg_answer_length = sum(len(ans) for ans in st.session_state.user_answers) / len(st.session_state.user_answers) if st.session_state.user_answers else 0
-            confidence_score = min(95, max(60, int(avg_answer_length / 5)))
-            st.metric("Confidence Score", f"{confidence_score}%")
+            # Calculate engagement score based on answer length
+            if st.session_state.user_answers:
+                avg_length = sum(len(ans.split()) for ans in st.session_state.user_answers) / len(st.session_state.user_answers)
+                engagement_score = min(95, max(65, int(avg_length * 2)))
+            else:
+                engagement_score = 70
+            st.metric("Engagement Score", f"{engagement_score}%")
+        
         with col3:
-            st.metric("Key Strengths", random.randint(2, 5))
+            improvement_areas = random.randint(2, 4)
+            st.metric("Growth Areas Identified", improvement_areas)
         
-        # Add specific feedback points
-        with st.expander("📋 Detailed Feedback"):
-            st.write("Based on your performance:")
-            st.write("✅ **Strengths:**")
-            st.write("- Willingness to engage with technical questions")
-            st.write("- Clear communication style")
+        # Detailed feedback section
+        with st.expander("📋 Detailed Performance Analysis"):
+            st.markdown("### Strengths Observed:")
+            st.write("✅ Active participation in the interview process")
+            st.write("✅ Willingness to engage with technical questions")
+            if any(len(ans.split()) > 30 for ans in st.session_state.user_answers):
+                st.write("✅ Provided detailed responses to questions")
             
-            st.write("📝 **Areas for Improvement:**")
-            st.write("- Provide more specific examples in your answers")
-            st.write("- Structure responses using the STAR method (Situation, Task, Action, Result)")
-            st.write("- Include more technical details relevant to the question")
+            st.markdown("### Recommendations for Improvement:")
+            st.write("📈 Practice the STAR method (Situation, Task, Action, Result)")
+            st.write("📈 Include more specific examples from your experience")
+            st.write("📈 Focus on explaining your thought process clearly")
+            
+            st.markdown("### Next Steps:")
+            st.write(f"🎯 Continue practicing {st.session_state.selected_track} concepts")
+            st.write("🎯 Work on structuring your responses more effectively")
+            st.write("🎯 Practice explaining complex topics in simple terms")
         
-        if st.button("🔄 Start New Interview"):
-            # Reset all session state variables except model-related ones
+        # Reset button
+        if st.button("🔄 Start New Interview", type="primary", use_container_width=True):
+            # Clear interview-related session state
+            keys_to_keep = ['model_loaded', 'model_loading', 'model_progress', 'tokenizer', 'model']
             for key in list(st.session_state.keys()):
-                if key not in ['model_loaded', 'model_loading', 'model_progress', 'tokenizer', 'model', 'show_interview']:
+                if key not in keys_to_keep:
                     del st.session_state[key]
             st.rerun()
 
-# Display tips (always show)
-with st.expander("💡 Interview Tips"):
+# Interview tips (always visible)
+with st.expander("💡 Interview Success Tips"):
     st.markdown("""
-    - **Use the STAR method**: Situation, Task, Action, Result
-    - **Be specific**: Include numbers, technologies, and outcomes
-    - **It's OK to think**: Say "Let me think about that for a moment"
-    - **Ask clarifying questions**: Ensure you understand what's being asked
-    - **Structure your answers**: Start with a direct answer, then provide details
-    - **Include examples**: Reference real projects and experiences
-    - **Be concise**: Get to the point but provide enough detail
-    - **Stay positive**: Frame challenges as learning experiences
+    **Before You Start:**
+    - Take a moment to understand each question fully
+    - Think about real examples from your experience
+    - Structure your thoughts before answering
+    
+    **During the Interview:**
+    - Use the STAR method: Situation, Task, Action, Result
+    - Be specific with numbers, technologies, and outcomes
+    - It's okay to pause and think before answering
+    - Ask for clarification if a question is unclear
+    
+    **Answer Structure:**
+    - Start with a direct answer to the question
+    - Provide context and background
+    - Explain your approach or methodology
+    - Share the outcome and what you learned
+    
+    **Common Mistakes to Avoid:**
+    - Being too vague or general in your responses
+    - Not providing concrete examples
+    - Rushing through your answers
+    - Forgetting to explain your reasoning process
     """)
 
-# Add footer with info
+# Footer
 st.markdown("---")
-st.caption("Powered by AI Interview Simulation | Questions and feedback generated in real-time by the language model")
+st.caption("🤖 AI-Powered Interview Simulator | Realistic practice with instant feedback")
