@@ -1,10 +1,8 @@
 # interview_simulator_crew.py
 import streamlit as st
-import pandas as pd
 import random
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import time
-import os
 
 # --- Model Setup with Proper Caching ---
 MODEL_NAME = "declare-lab/flan-alpaca-base"  # Using a smaller model for faster loading
@@ -18,9 +16,9 @@ if 'model_loading' not in st.session_state:
 if 'model_progress' not in st.session_state:
     st.session_state.model_progress = 0
 if 'show_interview' not in st.session_state:
-    st.session_state.show_interview = False  # New state to control interview section visibility
+    st.session_state.show_interview = False
 
-# Define generate_text function early so it's available
+# Define generate_text function
 def generate_text(prompt, max_len=200):
     """Generate text with the loaded model"""
     if 'tokenizer' not in st.session_state or 'model' not in st.session_state:
@@ -64,42 +62,28 @@ def load_model_components():
         
         st.session_state.model_loading = False
         st.session_state.model_loaded = True
-        st.session_state.show_interview = True  # Show interview section now
+        st.session_state.show_interview = True
         return tokenizer, model
     except Exception as e:
         st.error(f"Error loading model: {e}")
         st.stop()
 
-# --- Load dataset first so users can see something immediately ---
-try:
-    with st.spinner("📊 Loading interview questions..."):
-        # Create data directory if it doesn't exist
-        os.makedirs("data", exist_ok=True)
-        df = pd.read_csv("data/Software Questions.csv", encoding="latin-1")
-except FileNotFoundError:
-    st.error("CSV file not found. Please make sure 'data/Software Questions.csv' exists.")
-    st.stop()
-
 # --- Streamlit UI ---
 st.title("🤖 AI-Powered Interview Simulation with CrewAI")
-st.markdown("Experience a realistic interview with multiple AI agents (Interviewer, Coach, and you as Candidate)!")
+st.markdown("Experience a realistic interview with AI-generated questions and feedback!")
 
 # Show loading message until model is ready
 if not st.session_state.model_loaded:
-    # Display app interface while model loads in background
     st.info("⏳ The AI model is loading in the background. You can configure your interview while you wait.")
     
-    # Show progress bar for model loading
     if st.session_state.model_loading:
         progress_bar = st.progress(st.session_state.model_progress, 
                                   text=f"Loading AI model... {st.session_state.model_progress}%")
     else:
-        # Start loading the model if not already loading
         tokenizer, model = load_model_components()
         st.rerun()
 
-# Sidebar for configuration (always show)
-# --- Sidebar for configuration ---
+# Sidebar for configuration
 with st.sidebar:
     st.header("Interview Configuration")
 
@@ -111,63 +95,28 @@ with st.sidebar:
         st.warning("⏳ Model loading in progress")
 
     # Input options
-    tracks = df['Category'].unique().tolist()
-    difficulties = df['Difficulty'].unique().tolist()
-
-    # Use confirmed values if they exist
+    tracks = ["Software Development", "Data Science", "Product Management", "UX Design", "Marketing"]
+    difficulties = ["Easy", "Medium", "Hard"]
+    
     selected_track = st.selectbox(
         "Select Track:",
         tracks,
-        index=tracks.index(st.session_state.get('selected_track', tracks[0])) if st.session_state.get('selected_track') in tracks else 0
+        index=0
     )
 
     selected_difficulty = st.selectbox(
         "Select Difficulty:",
         difficulties,
-        index=difficulties.index(st.session_state.get('selected_difficulty', difficulties[0])) if st.session_state.get('selected_difficulty') in difficulties else 0
+        index=0
     )
 
     num_questions = st.number_input(
         "Number of Questions:",
         min_value=1,
         max_value=10,
-        value=st.session_state.get('selected_num_questions', 1)
+        value=3
     )
 
-    # Check if there are questions for the selected track and difficulty
-    available_questions = df[
-        (df['Category'] == selected_track) &
-        (df['Difficulty'] == selected_difficulty)
-    ]
-    
-    # Display availability status
-    if len(available_questions) == 0:
-        st.error(f"❌ No questions available for {selected_track} track with {selected_difficulty} difficulty.")
-        st.session_state.settings_confirmed = False
-        confirm_button = st.button("Confirm Settings", type="primary", use_container_width=True, disabled=True)
-    else:
-        st.success(f"✅ {len(available_questions)} questions available")
-        
-        # Confirm button
-        if st.button("Confirm Settings", type="primary", use_container_width=True):
-            # Save selected values in session_state
-            st.session_state.selected_track = selected_track
-            st.session_state.selected_difficulty = selected_difficulty
-            st.session_state.selected_num_questions = num_questions
-            
-            # Re-select questions from CSV based on new settings
-            n_questions = min(num_questions, len(available_questions))
-            st.session_state.selected_questions = available_questions.sample(n=n_questions)
-            st.session_state.current_q = 0
-            st.session_state.user_answers = []
-            st.session_state.conversation = []
-            st.session_state.interview_finished = False
-            st.session_state.questions_asked = []
-            st.session_state.settings_confirmed = True
-            st.session_state.show_interview = True
-            st.rerun()
-
-    
     # Agent personality options
     st.subheader("Agent Personalities")
     interviewer_style = st.selectbox(
@@ -180,46 +129,35 @@ with st.sidebar:
         ["Encouraging", "Constructive", "Direct", "Detailed"]
     )
     
-    st.sidebar.info(f"📋 Loaded {len(df)} questions across {df['Category'].nunique()} categories")
-
-# Only show the interview section after model is loaded and settings confirmed
-if st.session_state.model_loaded and st.session_state.show_interview:
-    # --- Initialize session_state with default values ---
-    if 'initialized' not in st.session_state:
-        st.session_state.initialized = True
+    # Confirm button
+    if st.button("Start Interview", type="primary", use_container_width=True):
+        st.session_state.selected_track = selected_track
+        st.session_state.selected_difficulty = selected_difficulty
+        st.session_state.selected_num_questions = num_questions
+        st.session_state.interviewer_style = interviewer_style
+        st.session_state.coach_style = coach_style
+        
+        # Initialize interview state
         st.session_state.current_q = 0
         st.session_state.user_answers = []
-        st.session_state.conversation = []  # Stores the entire conversation
+        st.session_state.conversation = []
         st.session_state.interview_finished = False
-        st.session_state.questions_asked = []  # Track which questions have been asked
-        st.session_state.selected_questions = None
-        st.session_state.settings_confirmed = False  # Settings confirmation status
+        st.session_state.questions = []
+        st.session_state.expected_answers = []
+        st.session_state.settings_confirmed = True
+        st.session_state.show_interview = True
+        st.rerun()
 
-    # Check if settings are confirmed before proceeding
-    if not st.session_state.get('settings_confirmed', False):
-        st.info("👆 Please confirm your interview settings in the sidebar to start the interview.")
-        st.stop()
-
-    # Get selected questions based on current configuration
-    if st.session_state.selected_questions is None:
-        # Use confirmed settings instead of current values
-        confirmed_track = st.session_state.get('selected_track', selected_track)
-        confirmed_difficulty = st.session_state.get('selected_difficulty', selected_difficulty)
-        confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
-        
-        filtered_df = df[
-            (df['Category'] == confirmed_track) & 
-            (df['Difficulty'] == confirmed_difficulty)
-        ]
-        
-        # Check if we have questions for the confirmed settings
-        if len(filtered_df) == 0:
-            st.error(f"No questions available for {confirmed_track} track with {confirmed_difficulty} difficulty.")
-            st.session_state.settings_confirmed = False
-            st.stop()
-        
-        n_questions = min(confirmed_num_questions, len(filtered_df))
-        st.session_state.selected_questions = filtered_df.sample(n=n_questions)
+# Only show the interview section after model is loaded and settings confirmed
+if st.session_state.model_loaded and st.session_state.get('settings_confirmed', False):
+    # Initialize session state with default values
+    if 'current_q' not in st.session_state:
+        st.session_state.current_q = 0
+        st.session_state.user_answers = []
+        st.session_state.conversation = []
+        st.session_state.interview_finished = False
+        st.session_state.questions = []
+        st.session_state.expected_answers = []
 
     # Function to add messages to the conversation
     def add_to_conversation(role, message, agent_type=None):
@@ -233,12 +171,7 @@ if st.session_state.model_loaded and st.session_state.show_interview:
 
     # Initialize conversation if empty
     if len(st.session_state.get('conversation', [])) == 0:
-        # Use confirmed settings
-        confirmed_track = st.session_state.get('selected_track', selected_track)
-        confirmed_difficulty = st.session_state.get('selected_difficulty', selected_difficulty)
-        confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
-        
-        add_to_conversation("System", f"Starting a {confirmed_difficulty} level interview for {confirmed_track} track with {confirmed_num_questions} questions.")
+        add_to_conversation("System", f"Starting a {st.session_state.selected_difficulty} level interview for {st.session_state.selected_track} track with {st.session_state.selected_num_questions} questions.")
 
     # Display conversation
     st.subheader("Interview Conversation")
@@ -252,33 +185,50 @@ if st.session_state.model_loaded and st.session_state.show_interview:
                     st.write(f"📢 {msg['message']}")
             elif msg["role"] == "Interviewer":
                 with st.chat_message("assistant", avatar="👔"):
-                    st.write(f"**Interviewer** ({interviewer_style}): {msg['message']}")
+                    st.write(f"**Interviewer** ({st.session_state.interviewer_style}): {msg['message']}")
             elif msg["role"] == "Coach":
                 with st.chat_message("assistant", avatar="📊"):
-                    st.write(f"**Coach** ({coach_style}): {msg['message']}")
+                    st.write(f"**Coach** ({st.session_state.coach_style}): {msg['message']}")
             elif msg["role"] == "Candidate":
                 with st.chat_message("user", avatar="🧑‍💼"):
                     st.write(f"**You**: {msg['message']}")
 
     # Interview process
     if not st.session_state.get('interview_finished', False):
-        # Use confirmed settings
-        confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
-        
-        # Check if we have questions to ask
-        if st.session_state.selected_questions is None or len(st.session_state.selected_questions) == 0:
-            st.error("No questions available for the selected criteria. Please choose different settings.")
-            st.stop()
+        if st.session_state.current_q < st.session_state.selected_num_questions:
+            current_q_index = st.session_state.current_q
             
-        if st.session_state.get('current_q', 0) < confirmed_num_questions:
-            current_q_index = st.session_state.get('current_q', 0)
+            # Generate question if not already generated for this index
+            if len(st.session_state.questions) <= current_q_index:
+                with st.status("💭 Interviewer is generating a question...", expanded=False) as status:
+                    question_prompt = f"""
+                    As a {st.session_state.interviewer_style} technical interviewer in {st.session_state.selected_track}, 
+                    generate a {st.session_state.selected_difficulty.lower()} level interview question.
+                    
+                    The question should be specific, relevant to the field, and appropriate for the difficulty level.
+                    Return only the question without any additional text.
+                    """
+                    st.write("Creating a tailored question...")
+                    question = generate_text(question_prompt, max_len=100)
+                    
+                    # Generate expected answer
+                    answer_prompt = f"""
+                    As an expert in {st.session_state.selected_track}, provide a model answer to the following question:
+                    "{question}"
+                    
+                    The answer should be comprehensive, technically accurate, and appropriate for a {st.session_state.selected_difficulty.lower()} level.
+                    Return only the answer without any additional text.
+                    """
+                    st.write("Preparing model answer...")
+                    expected_answer = generate_text(answer_prompt, max_len=300)
+                    
+                    # Store the generated question and answer
+                    st.session_state.questions.append(question)
+                    st.session_state.expected_answers.append(expected_answer)
+                    status.update(label="✅ Question ready", state="complete")
             
-            # Make sure the current index is within bounds
-            if current_q_index >= len(st.session_state.selected_questions):
-                st.error("Question index out of bounds. Please restart the interview.")
-                st.stop()
-                
-            q_row = st.session_state.selected_questions.iloc[current_q_index]
+            # Get the current question
+            current_question = st.session_state.questions[current_q_index]
             
             # Interviewer asks question (only if not already asked)
             question_already_asked = any(msg.get("question_id") == current_q_index for msg in st.session_state.get('conversation', []))
@@ -287,8 +237,8 @@ if st.session_state.model_loaded and st.session_state.show_interview:
                 # Agent: Interviewer
                 with st.status("💭 Interviewer is thinking...", expanded=False) as status:
                     interviewer_prompt = f"""
-                    As a {interviewer_style} technical interviewer, ask this question in a conversational way:
-                    "{q_row['Question']}"
+                    As a {st.session_state.interviewer_style} technical interviewer, ask this question in a conversational way:
+                    "{current_question}"
                     
                     Make it sound natural like a real conversation. Just ask the question directly without extra commentary.
                     """
@@ -296,12 +246,11 @@ if st.session_state.model_loaded and st.session_state.show_interview:
                     interviewer_text = generate_text(interviewer_prompt)
                     # Fallback to the original question if the generated text is too short
                     if len(interviewer_text.strip()) < 10:
-                        interviewer_text = q_row['Question']
+                        interviewer_text = current_question
                     status.update(label="✅ Question ready", state="complete")
                 
                 add_to_conversation("Interviewer", interviewer_text, "Interviewer")
                 st.session_state.conversation[-1]["question_id"] = current_q_index
-                st.session_state.questions_asked.append(current_q_index)
                 st.rerun()
             
             # Candidate answers
@@ -317,11 +266,11 @@ if st.session_state.model_loaded and st.session_state.show_interview:
                     # Coach provides immediate feedback
                     with st.status("📝 Coach is analyzing your answer...", expanded=False) as status:
                         coach_prompt = f"""
-                        As a {coach_style} interview coach, provide specific, constructive feedback on this answer:
+                        As a {st.session_state.coach_style} interview coach, provide specific, constructive feedback on this answer:
                         
-                        QUESTION: {q_row['Question']}
+                        QUESTION: {current_question}
                         CANDIDATE'S ANSWER: {user_answer}
-                        EXPECTED ANSWER: {q_row['Answer']}
+                        EXPECTED ANSWER: {st.session_state.expected_answers[current_q_index]}
                         
                         Provide 2-3 specific suggestions for improvement. Focus on technical accuracy, completeness, and clarity.
                         Be supportive but honest. Maximum 3 sentences.
@@ -342,17 +291,12 @@ if st.session_state.model_loaded and st.session_state.show_interview:
             # Interview finished - provide overall feedback
             st.session_state.interview_finished = True
             
-            # Use confirmed settings
-            confirmed_track = st.session_state.get('selected_track', selected_track)
-            confirmed_difficulty = st.session_state.get('selected_difficulty', selected_difficulty)
-            confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
-            
             # Generate overall feedback
             with st.status("📊 Generating overall feedback...", expanded=False) as status:
                 feedback_prompt = f"""
                 As an experienced interview coach, provide overall feedback on this candidate's performance:
                 
-                They answered {confirmed_num_questions} questions on {confirmed_track} at {confirmed_difficulty} level.
+                They answered {st.session_state.selected_num_questions} questions on {st.session_state.selected_track} at {st.session_state.selected_difficulty} level.
                 
                 Provide specific feedback on:
                 1. Technical knowledge demonstrated
@@ -378,14 +322,11 @@ if st.session_state.model_loaded and st.session_state.show_interview:
         st.balloons()
         st.success("🎉 Interview completed! Check out your overall feedback above.")
         
-        # Use confirmed settings
-        confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
-        
         # Performance metrics (simulated but more realistic)
         st.subheader("📈 Performance Summary")
         col1, col2, col3 = st.columns(3)
         with col1:
-            st.metric("Questions Answered", f"{confirmed_num_questions}/{confirmed_num_questions}", "100%")
+            st.metric("Questions Answered", f"{st.session_state.selected_num_questions}/{st.session_state.selected_num_questions}", "100%")
         with col2:
             # More realistic confidence score based on answer length
             avg_answer_length = sum(len(ans) for ans in st.session_state.user_answers) / len(st.session_state.user_answers) if st.session_state.user_answers else 0
@@ -428,4 +369,4 @@ with st.expander("💡 Interview Tips"):
 
 # Add footer with info
 st.markdown("---")
-st.caption("Powered by FLAN-T5 Base model • Interview questions dataset curated for software roles")
+st.caption("Powered by AI Interview Simulation | Questions and feedback generated in real-time by the language model")
