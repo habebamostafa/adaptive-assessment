@@ -7,7 +7,7 @@ import time
 import os
 
 # --- Model Setup with Proper Caching ---
-MODEL_NAME = "google/flan-t5-base"  # Using a smaller model for faster loading
+MODEL_NAME = "declare-lab/flan-alpaca-base"  # Using a smaller model for faster loading
 HF_TOKEN = st.secrets.get("HF_TOKEN", None)
 
 # Initialize session state for model loading
