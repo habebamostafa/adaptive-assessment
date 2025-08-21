@@ -18,6 +18,19 @@ if 'model_loading' not in st.session_state:
 if 'model_progress' not in st.session_state:
     st.session_state.model_progress = 0
 
+# Define generate_text function early so it's available
+def generate_text(prompt, max_len=200):
+    """Generate text with the loaded model"""
+    if 'tokenizer' not in st.session_state or 'model' not in st.session_state:
+        return "Model not loaded yet. Please wait..."
+    
+    try:
+        inputs = st.session_state.tokenizer(prompt, return_tensors="pt")
+        outputs = st.session_state.model.generate(**inputs, max_length=max_len)
+        return st.session_state.tokenizer.decode(outputs[0], skip_special_tokens=True)
+    except Exception as e:
+        return f"Model error: {e}"
+
 @st.cache_resource(show_spinner=False)
 def load_model_components():
     """Load the model and tokenizer with proper caching"""
@@ -38,6 +51,10 @@ def load_model_components():
         else:
             tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
             model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+        
+        # Store in session state for global access
+        st.session_state.tokenizer = tokenizer
+        st.session_state.model = model
         
         progress_bar.progress(100, text="Model loaded successfully!")
         time.sleep(0.5)
@@ -256,7 +273,7 @@ if st.session_state.model_loaded:
         if st.button("🔄 Start New Interview"):
             # Reset all session state variables except model-related ones
             for key in list(st.session_state.keys()):
-                if key not in ['model_loaded', 'model_loading', 'model_progress']:
+                if key not in ['model_loaded', 'model_loading', 'model_progress', 'tokenizer', 'model']:
                     del st.session_state[key]
             st.rerun()
 
