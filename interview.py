@@ -218,14 +218,6 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
                     - Different from previous questions
                     - Focused on a different aspect than previous questions
                     
-                    For Mobile App track, consider asking about:
-                    - Different development approaches (native vs hybrid)
-                    - Specific platforms (iOS, Android)
-                    - UI/UX considerations
-                    - Performance optimization
-                    - Testing methodologies
-                    - App store submission process
-                    
                     Return only the question without any additional text.
                     """
                     st.write("Creating a tailored question...")
