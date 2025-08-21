@@ -1,16 +1,14 @@
-# interview_simulator_streamlit.py
 import streamlit as st
 from transformers import AutoModelForSeq2SeqLM, AutoTokenizer
 
-# --- إعداد الموديل ---
+# --- تحميل التوكين من secrets ---
+HF_TOKEN = st.secrets["HF_TOKEN"]
+
 model_name = "google/flan-t5-large"
+tokenizer = AutoTokenizer.from_pretrained(model_name, use_auth_token=HF_TOKEN)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name, use_auth_token=HF_TOKEN)
 
-# استخدام التوكين من environment variable
-token = True  # يستخدم HUGGINGFACEHUB_API_TOKEN
-
-tokenizer = AutoTokenizer.from_pretrained(model_name, use_auth_token=token)
-model = AutoModelForSeq2SeqLM.from_pretrained(model_name, use_auth_token=token)
-
+# --- باقي كود Streamlit كما هو ---
 def generate_question(track, difficulty, question_num):
     prompt = f"""
 You are an AI interviewer for {track} field.
