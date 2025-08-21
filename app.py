@@ -337,7 +337,7 @@ def render_question():
     
     with col2:
         if st.session_state.answer_confirmed:
-            if st.button("➡️ السؤال التالي"):
+            if st.button("➡️  next question"):
                 process_answer()
     
     with col3:
@@ -541,7 +541,7 @@ def main():
             st.write(f"** total questions:** {track_stats['total_questions']}")
             
             for level, info in track_stats['levels'].items():
-                st.write(f"**{info['difficulty']}:** {info['count']} سؤال")
+                st.write(f"**{info['difficulty']}:** {info['count']} question")
         
         with col2:
             st.subheader("ℹ️ test info")
