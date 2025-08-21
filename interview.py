@@ -95,13 +95,13 @@ with st.sidebar:
         st.warning("⏳ Model loading in progress")
 
     # Input options
-    tracks = ["Artificial Intelligence" ,"Software Development","Web Devolopment","Mobile App", "Data Science", "Product Management", "UX Design", "Marketing"]
+    tracks = ["Artificial Intelligence", "Software Development", "Web Development", "Mobile App", "Data Science", "Product Management", "UX Design", "Marketing"]
     difficulties = ["Easy", "Medium", "Hard"]
     
     selected_track = st.selectbox(
         "Select Track:",
         tracks,
-        index=0
+        index=3  # Default to Mobile App
     )
 
     selected_difficulty = st.selectbox(
@@ -201,22 +201,51 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
             # Generate question if not already generated for this index
             if len(st.session_state.questions) <= current_q_index:
                 with st.status("💭 Interviewer is generating a question...", expanded=False) as status:
+                    # Get previously asked questions to avoid repetition
+                    previous_questions = st.session_state.questions
+                    previous_questions_text = ", ".join(previous_questions) if previous_questions else "None"
+                    
                     question_prompt = f"""
                     As a {st.session_state.interviewer_style} technical interviewer in {st.session_state.selected_track}, 
                     generate a {st.session_state.selected_difficulty.lower()} level interview question.
                     
-                    The question should be specific, relevant to the field, and appropriate for the difficulty level.
+                    This is question {current_q_index + 1} of {st.session_state.selected_num_questions}.
+                    Previously asked questions: {previous_questions_text}
+                    
+                    The question should be:
+                    - Specific and relevant to {st.session_state.selected_track}
+                    - Appropriate for {st.session_state.selected_difficulty} level
+                    - Different from previous questions
+                    - Focused on a different aspect than previous questions
+                    
+                    For Mobile App track, consider asking about:
+                    - Different development approaches (native vs hybrid)
+                    - Specific platforms (iOS, Android)
+                    - UI/UX considerations
+                    - Performance optimization
+                    - Testing methodologies
+                    - App store submission process
+                    
                     Return only the question without any additional text.
                     """
                     st.write("Creating a tailored question...")
                     question = generate_text(question_prompt, max_len=100)
+                    
+                    # If the question is too similar to previous ones, try again
+                    if previous_questions and any(prev_q in question for prev_q in previous_questions):
+                        st.write("Generating a different question to avoid repetition...")
+                        question = generate_text(question_prompt, max_len=100)
                     
                     # Generate expected answer
                     answer_prompt = f"""
                     As an expert in {st.session_state.selected_track}, provide a model answer to the following question:
                     "{question}"
                     
-                    The answer should be comprehensive, technically accurate, and appropriate for a {st.session_state.selected_difficulty.lower()} level.
+                    The answer should be:
+                    - Comprehensive and technically accurate
+                    - Appropriate for a {st.session_state.selected_difficulty.lower()} level
+                    - Structured and clear
+                    
                     Return only the answer without any additional text.
                     """
                     st.write("Preparing model answer...")
