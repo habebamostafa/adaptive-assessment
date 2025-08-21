@@ -148,7 +148,6 @@ with st.sidebar:
             (df['Category'] == selected_track) &
             (df['Difficulty'] == selected_difficulty)
         ])))
-        # إعادة تهيئة المتغيرات المتعلقة بالمقابلة
         st.session_state.current_q = 0
         st.session_state.user_answers = []
         st.session_state.conversation = []
@@ -156,7 +155,7 @@ with st.sidebar:
         st.session_state.questions_asked = []
         st.session_state.settings_confirmed = True
         st.session_state.show_interview = True
-        st.experimental_rerun()
+        st.rerun()
 
     
     # Agent personality options
