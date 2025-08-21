@@ -114,17 +114,17 @@ with st.sidebar:
     tracks = df['Category'].unique().tolist()
     difficulties = df['Difficulty'].unique().tolist()
 
-    # استخدم القيم المؤكدة إذا موجودة
+    # Use confirmed values if they exist
     selected_track = st.selectbox(
         "Select Track:",
         tracks,
-        index=tracks.index(st.session_state.get('selected_track', tracks[0]))
+        index=tracks.index(st.session_state.get('selected_track', tracks[0])) if st.session_state.get('selected_track') else 0
     )
 
     selected_difficulty = st.selectbox(
         "Select Difficulty:",
         difficulties,
-        index=difficulties.index(st.session_state.get('selected_difficulty', difficulties[0]))
+        index=difficulties.index(st.session_state.get('selected_difficulty', difficulties[0])) if st.session_state.get('selected_difficulty') else 0
     )
 
     num_questions = st.number_input(
@@ -136,18 +136,17 @@ with st.sidebar:
 
     # Confirm button
     if st.button("Confirm Settings", type="primary", use_container_width=True):
-        # حفظ القيم المختارة في session_state
+        # Save selected values in session_state
         st.session_state.selected_track = selected_track
         st.session_state.selected_difficulty = selected_difficulty
         st.session_state.selected_num_questions = num_questions
-        # إعادة اختيار الأسئلة من CSV بناءً على الإعدادات الجديدة
-        st.session_state.selected_questions = df[
+        # Re-select questions from CSV based on new settings
+        filtered_df = df[
             (df['Category'] == selected_track) &
             (df['Difficulty'] == selected_difficulty)
-        ].sample(n=min(num_questions, len(df[
-            (df['Category'] == selected_track) &
-            (df['Difficulty'] == selected_difficulty)
-        ])))
+        ]
+        n_questions = min(num_questions, len(filtered_df))
+        st.session_state.selected_questions = filtered_df.sample(n=n_questions)
         st.session_state.current_q = 0
         st.session_state.user_answers = []
         st.session_state.conversation = []
@@ -183,23 +182,26 @@ if st.session_state.model_loaded and st.session_state.show_interview:
         st.session_state.interview_finished = False
         st.session_state.questions_asked = []  # Track which questions have been asked
         st.session_state.selected_questions = None
-        st.session_state.settings_confirmed = False  # حالة تأكيد الإعدادات
+        st.session_state.settings_confirmed = False  # Settings confirmation status
 
-    # التحقق من تأكيد الإعدادات قبل المتابعة
+    # Check if settings are confirmed before proceeding
     if not st.session_state.get('settings_confirmed', False):
         st.info("👆 Please confirm your interview settings in the sidebar to start the interview.")
         st.stop()
 
     # Get selected questions based on current configuration
     if st.session_state.selected_questions is None:
-        # استخدام الإعدادات المؤكدة بدلاً من القيم الحالية
-        confirmed_track = st.session_state.get('selected_track', track)
-        confirmed_difficulty = st.session_state.get('selected_difficulty', difficulty)
+        # Use confirmed settings instead of current values
+        confirmed_track = st.session_state.get('selected_track', selected_track)
+        confirmed_difficulty = st.session_state.get('selected_difficulty', selected_difficulty)
         confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
         
-        st.session_state.selected_questions = df[
-            (df['Category'] == confirmed_track) & (df['Difficulty'] == confirmed_difficulty)
-        ].sample(n=min(confirmed_num_questions, len(df[(df['Category'] == confirmed_track) & (df['Difficulty'] == confirmed_difficulty)])))
+        filtered_df = df[
+            (df['Category'] == confirmed_track) & 
+            (df['Difficulty'] == confirmed_difficulty)
+        ]
+        n_questions = min(confirmed_num_questions, len(filtered_df))
+        st.session_state.selected_questions = filtered_df.sample(n=n_questions)
 
     # Function to add messages to the conversation
     def add_to_conversation(role, message, agent_type=None):
@@ -213,9 +215,9 @@ if st.session_state.model_loaded and st.session_state.show_interview:
 
     # Initialize conversation if empty
     if len(st.session_state.get('conversation', [])) == 0:
-        # استخدام الإعدادات المؤكدة
-        confirmed_track = st.session_state.get('selected_track', track)
-        confirmed_difficulty = st.session_state.get('selected_difficulty', difficulty)
+        # Use confirmed settings
+        confirmed_track = st.session_state.get('selected_track', selected_track)
+        confirmed_difficulty = st.session_state.get('selected_difficulty', selected_difficulty)
         confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
         
         add_to_conversation("System", f"Starting a {confirmed_difficulty} level interview for {confirmed_track} track with {confirmed_num_questions} questions.")
@@ -242,7 +244,7 @@ if st.session_state.model_loaded and st.session_state.show_interview:
 
     # Interview process
     if not st.session_state.get('interview_finished', False):
-        # استخدام الإعدادات المؤكدة
+        # Use confirmed settings
         confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
         
         if st.session_state.get('current_q', 0) < confirmed_num_questions:
@@ -311,9 +313,9 @@ if st.session_state.model_loaded and st.session_state.show_interview:
             # Interview finished - provide overall feedback
             st.session_state.interview_finished = True
             
-            # استخدام الإعدادات المؤكدة
-            confirmed_track = st.session_state.get('selected_track', track)
-            confirmed_difficulty = st.session_state.get('selected_difficulty', difficulty)
+            # Use confirmed settings
+            confirmed_track = st.session_state.get('selected_track', selected_track)
+            confirmed_difficulty = st.session_state.get('selected_difficulty', selected_difficulty)
             confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
             
             # Generate overall feedback
@@ -337,7 +339,7 @@ if st.session_state.model_loaded and st.session_state.show_interview:
                 # Fallback overall feedback
                 if len(overall_feedback.strip()) < 30:
                     overall_feedback = "You completed the interview! To improve, focus on providing more detailed answers with specific examples from your experience. Practice explaining technical concepts clearly and concisely."
-                status.update(label("✅ Overall feedback ready", state="complete"))
+                status.update(label="✅ Overall feedback ready", state="complete")
             
             add_to_conversation("Coach", f"Overall Feedback: {overall_feedback}", "Coach")
             st.rerun()
@@ -347,7 +349,7 @@ if st.session_state.model_loaded and st.session_state.show_interview:
         st.balloons()
         st.success("🎉 Interview completed! Check out your overall feedback above.")
         
-        # استخدام الإعدادات المؤكدة
+        # Use confirmed settings
         confirmed_num_questions = st.session_state.get('selected_num_questions', num_questions)
         
         # Performance metrics (simulated but more realistic)
