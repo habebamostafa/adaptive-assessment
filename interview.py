@@ -17,6 +17,8 @@ if 'model_loading' not in st.session_state:
     st.session_state.model_loading = False
 if 'model_progress' not in st.session_state:
     st.session_state.model_progress = 0
+if 'show_interview' not in st.session_state:
+    st.session_state.show_interview = False  # New state to control interview section visibility
 
 # Define generate_text function early so it's available
 def generate_text(prompt, max_len=200):
@@ -61,6 +63,8 @@ def load_model_components():
         progress_bar.empty()
         
         st.session_state.model_loading = False
+        st.session_state.model_loaded = True
+        st.session_state.show_interview = True  # Show interview section now
         return tokenizer, model
     except Exception as e:
         st.error(f"Error loading model: {e}")
@@ -92,41 +96,43 @@ if not st.session_state.model_loaded:
     else:
         # Start loading the model if not already loading
         tokenizer, model = load_model_components()
-        st.session_state.model_loaded = True
         st.rerun()
 
-# Only show the rest of the app after model is loaded
-if st.session_state.model_loaded:
-    # Sidebar for configuration
-    with st.sidebar:
-        st.header("Interview Configuration")
-        
-        # Display model status
-        st.subheader("System Status")
+# Sidebar for configuration (always show)
+with st.sidebar:
+    st.header("Interview Configuration")
+    
+    # Display model status
+    st.subheader("System Status")
+    if st.session_state.model_loaded:
         st.success("✅ Model loaded successfully")
-        
-        tracks = df['Category'].unique().tolist()
-        track = st.selectbox("Select Track:", tracks)
-        
-        difficulties = df['Difficulty'].unique().tolist()
-        difficulty = st.selectbox("Select Difficulty:", difficulties)
-        
-        num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=1)
-        
-        # Agent personality options
-        st.subheader("Agent Personalities")
-        interviewer_style = st.selectbox(
-            "Interviewer Style:",
-            ["Professional", "Friendly", "Technical", "Strict"]
-        )
-        
-        coach_style = st.selectbox(
-            "Coach Style:",
-            ["Encouraging", "Constructive", "Direct", "Detailed"]
-        )
-        
-        st.sidebar.info(f"📋 Loaded {len(df)} questions across {df['Category'].nunique()} categories")
+    else:
+        st.warning("⏳ Model loading in progress")
+    
+    tracks = df['Category'].unique().tolist()
+    track = st.selectbox("Select Track:", tracks)
+    
+    difficulties = df['Difficulty'].unique().tolist()
+    difficulty = st.selectbox("Select Difficulty:", difficulties)
+    
+    num_questions = st.number_input("Number of Questions:", min_value=1, max_value=10, value=1)
+    
+    # Agent personality options
+    st.subheader("Agent Personalities")
+    interviewer_style = st.selectbox(
+        "Interviewer Style:",
+        ["Professional", "Friendly", "Technical", "Strict"]
+    )
+    
+    coach_style = st.selectbox(
+        "Coach Style:",
+        ["Encouraging", "Constructive", "Direct", "Detailed"]
+    )
+    
+    st.sidebar.info(f"📋 Loaded {len(df)} questions across {df['Category'].nunique()} categories")
 
+# Only show the interview section after model is loaded
+if st.session_state.model_loaded and st.session_state.show_interview:
     # --- Initialize session_state with default values ---
     if 'initialized' not in st.session_state:
         st.session_state.initialized = True
@@ -304,23 +310,23 @@ if st.session_state.model_loaded:
         if st.button("🔄 Start New Interview"):
             # Reset all session state variables except model-related ones
             for key in list(st.session_state.keys()):
-                if key not in ['model_loaded', 'model_loading', 'model_progress', 'tokenizer', 'model']:
+                if key not in ['model_loaded', 'model_loading', 'model_progress', 'tokenizer', 'model', 'show_interview']:
                     del st.session_state[key]
             st.rerun()
 
-    # Display tips
-    with st.expander("💡 Interview Tips"):
-        st.markdown("""
-        - **Use the STAR method**: Situation, Task, Action, Result
-        - **Be specific**: Include numbers, technologies, and outcomes
-        - **It's OK to think**: Say "Let me think about that for a moment"
-        - **Ask clarifying questions**: Ensure you understand what's being asked
-        - **Structure your answers**: Start with a direct answer, then provide details
-        - **Include examples**: Reference real projects and experiences
-        - **Be concise**: Get to the point but provide enough detail
-        - **Stay positive**: Frame challenges as learning experiences
-        """)
+# Display tips (always show)
+with st.expander("💡 Interview Tips"):
+    st.markdown("""
+    - **Use the STAR method**: Situation, Task, Action, Result
+    - **Be specific**: Include numbers, technologies, and outcomes
+    - **It's OK to think**: Say "Let me think about that for a moment"
+    - **Ask clarifying questions**: Ensure you understand what's being asked
+    - **Structure your answers**: Start with a direct answer, then provide details
+    - **Include examples**: Reference real projects and experiences
+    - **Be concise**: Get to the point but provide enough detail
+    - **Stay positive**: Frame challenges as learning experiences
+    """)
 
-    # Add footer with info
-    st.markdown("---")
-    st.caption("Powered by FLAN-T5 Base model • Interview questions dataset curated for software roles")
+# Add footer with info
+st.markdown("---")
+st.caption("Powered by FLAN-T5 Base model • Interview questions dataset curated for software roles")
