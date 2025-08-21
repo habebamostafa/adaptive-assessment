@@ -11,8 +11,8 @@ HF_TOKEN = st.secrets.get("HF_TOKEN", None)  # Token مخفي في Streamlit Sec
 # تحميل الموديل مع معالجة حالة عدم وجود التوكن
 try:
     if HF_TOKEN:
-        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, use_auth_token=HF_TOKEN)
-        model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, use_auth_token=HF_TOKEN)
+        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=HF_TOKEN)
+        model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, token=HF_TOKEN)
     else:
         tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
         model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
