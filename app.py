@@ -83,7 +83,10 @@ def initialize_session_state():
     for key, default_value in defaults.items():
         if key not in st.session_state:
             st.session_state[key] = default_value
-
+if "agent" not in st.session_state:
+    st.session_state.agent = None
+if "agent" not in st.session_state:
+    st.session_state.agent = None    
 # Sidebar configuration
 def render_sidebar():
     """Render the sidebar with configuration options"""
@@ -163,6 +166,10 @@ def render_analytics():
     
     env = st.session_state.env
     agent = st.session_state.agent
+
+    if agent is None:
+        st.warning("Agent not initialized")
+        return
     
     st.header("📊 Analytics Dashboard")
     
