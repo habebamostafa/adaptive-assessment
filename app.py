@@ -553,6 +553,7 @@ def main():
         if st.button("🎯 start test", type="primary", use_container_width=True):
         # Initialize environment and agent
             st.session_state.env = AdaptiveAssessmentEnv(
+                track=selected_track
             )
 
             # إنشاء Agent جديد
