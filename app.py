@@ -559,7 +559,6 @@ def main():
             # إنشاء Agent جديد
             st.session_state.agent = RLAssessmentAgent(
                 env=st.session_state.env,
-                agent_type=st.session_state.agent_type,
             )
             
             st.session_state.initialized = True
