@@ -104,7 +104,7 @@ def load_model_components():
     """Load the model and tokenizer with proper caching"""
     try:
         # Use a smaller model for better performance
-        model_name = "google/flan-t5-base"
+        model_name = "google/flan-t5-large"
         
         if HF_TOKEN:
             tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_TOKEN)
