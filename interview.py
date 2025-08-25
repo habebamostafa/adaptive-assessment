@@ -2,9 +2,10 @@ import streamlit as st
 import random
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import time
+import torch
 
 # --- Model Setup with Proper Caching ---
-MODEL_NAME = "google/flan-t5-large"  # Better model for text generation
+MODEL_NAME = "google/flan-t5-base"  # Using a smaller model for better performance
 HF_TOKEN = st.secrets.get("HF_TOKEN", None)
 
 # Initialize session state for model loading
@@ -12,10 +13,10 @@ if 'model_loaded' not in st.session_state:
     st.session_state.model_loaded = False
 if 'model_loading' not in st.session_state:
     st.session_state.model_loading = False
-if 'model_progress' not in st.session_state:
-    st.session_state.model_progress = 0
 if 'show_interview' not in st.session_state:
     st.session_state.show_interview = False
+if 'settings_confirmed' not in st.session_state:
+    st.session_state.settings_confirmed = False
 
 # Define generate_text function with better parameters
 def generate_text(prompt, max_len=150, temperature=0.7):
@@ -30,6 +31,10 @@ def generate_text(prompt, max_len=150, temperature=0.7):
             max_length=512,
             truncation=True
         )
+        
+        # Move inputs to the same device as model
+        device = next(st.session_state.model.parameters()).device
+        inputs = {k: v.to(device) for k, v in inputs.items()}
         
         outputs = st.session_state.model.generate(
             **inputs, 
@@ -69,72 +74,59 @@ def get_fallback_response(prompt):
         ]
         return random.choice(feedbacks)
     else:
+        questions = {
+            "Artificial Intelligence": [
+                "Can you explain the difference between supervised and unsupervised learning?",
+                "What experience do you have with neural networks?",
+                "How would you handle an imbalanced dataset in a classification problem?"
+            ],
+            "Software Development": [
+                "Describe your experience with version control systems.",
+                "How do you approach debugging a complex issue?",
+                "What principles do you follow for writing clean, maintainable code?"
+            ],
+            "Web Development": [
+                "How do you ensure your web applications are accessible?",
+                "Describe your experience with responsive design.",
+                "What security considerations do you make when developing web applications?"
+            ]
+        }
+        
+        track = st.session_state.get('selected_track', 'Software Development')
+        difficulty = st.session_state.get('selected_difficulty', 'Medium')
+        
+        if track in questions:
+            return random.choice(questions[track])
         return "Thank you for your response. Let's continue with the next question."
 
 @st.cache_resource(show_spinner=False)
 def load_model_components():
     """Load the model and tokenizer with proper caching"""
     try:
-        st.session_state.model_loading = True
-        progress_bar = st.progress(0, text="Downloading model components...")
-        
-        # Update progress
-        for i in range(5):
-            st.session_state.model_progress = (i + 1) * 20
-            progress_bar.progress(
-                st.session_state.model_progress, 
-                text=f"Loading model components... {st.session_state.model_progress}%"
-            )
-            time.sleep(0.3)
+        # Use a smaller model for better performance
+        model_name = "google/flan-t5-base"
         
         if HF_TOKEN:
-            tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME, token=HF_TOKEN)
-            model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME, token=HF_TOKEN)
+            tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_TOKEN)
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_name, token=HF_TOKEN)
         else:
-            tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
-            model = AutoModelForSeq2SeqLM.from_pretrained(MODEL_NAME)
+            tokenizer = AutoTokenizer.from_pretrained(model_name)
+            model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
         
         # Handle tokenizer padding token
         if tokenizer.pad_token is None:
             tokenizer.pad_token = tokenizer.eos_token
         
-        # Store in session state for global access
-        st.session_state.tokenizer = tokenizer
-        st.session_state.model = model
-        
-        progress_bar.progress(100, text="Model loaded successfully!")
-        time.sleep(0.5)
-        progress_bar.empty()
-        
-        st.session_state.model_loading = False
-        st.session_state.model_loaded = True
-        st.session_state.show_interview = True
         return tokenizer, model
         
     except Exception as e:
         st.error(f"Error loading model: {e}")
-        st.info("Using fallback responses for the interview.")
-        st.session_state.model_loaded = True  
-        st.session_state.model_loading = False
-        st.session_state.show_interview = True
         return None, None
 
 # --- Streamlit UI ---
+st.set_page_config(page_title="AI Interview Simulator", page_icon="🤖", layout="wide")
 st.title("AI-Powered Interview Simulation")
 st.markdown("Experience a realistic interview with AI-generated questions and feedback!")
-
-# Show loading message until model is ready
-if not st.session_state.model_loaded:
-    st.info("⏳ The AI model is loading. You can configure your interview while you wait.")
-    
-    if st.session_state.model_loading:
-        progress_bar = st.progress(
-            st.session_state.model_progress, 
-            text=f"Loading AI model... {st.session_state.model_progress}%"
-        )
-    else:
-        tokenizer, model = load_model_components()
-        st.rerun()
 
 # Sidebar for configuration
 with st.sidebar:
@@ -145,7 +137,7 @@ with st.sidebar:
     if st.session_state.model_loaded:
         st.success("✅ Model loaded successfully")
     else:
-        st.warning("⏳ Model loading in progress")
+        st.warning("⏳ Model not loaded yet")
 
     # Input options
     tracks = [
@@ -208,8 +200,26 @@ with st.sidebar:
         st.session_state.questions = []
         st.session_state.expected_answers = []
         st.session_state.settings_confirmed = True
-        st.session_state.show_interview = True
+        
+        # Load model if not already loaded
+        if not st.session_state.model_loaded:
+            st.session_state.model_loading = True
+            with st.spinner("Loading AI model..."):
+                tokenizer, model = load_model_components()
+                if tokenizer and model:
+                    st.session_state.tokenizer = tokenizer
+                    st.session_state.model = model
+                    st.session_state.model_loaded = True
+                else:
+                    st.error("Failed to load model. Using fallback mode.")
+                    st.session_state.model_loaded = True  # Continue with fallback
+                st.session_state.model_loading = False
         st.rerun()
+
+# Show loading message until model is ready
+if not st.session_state.model_loaded and st.session_state.get('model_loading', False):
+    st.info("⏳ The AI model is loading. You can configure your interview while you wait.")
+    st.spinner("Downloading model components...")
 
 # Only show interview section when ready
 if st.session_state.model_loaded and st.session_state.get('settings_confirmed', False):
@@ -270,7 +280,7 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
             
             # Generate question if needed
             if len(st.session_state.questions) <= current_q_index:
-                with st.status("💭 Preparing next question...", expanded=False) as status:
+                with st.spinner("💭 Preparing next question..."):
                     # Create specific examples based on track and difficulty
                     track_examples = {
                         "Artificial Intelligence": {
@@ -287,11 +297,6 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
                             "Easy": "responsive design problem, basic functionality implementation, user experience issue",
                             "Medium": "full-stack application design, performance optimization, security implementation",
                             "Hard": "large-scale web architecture, advanced frontend/backend integration, complex state management"
-                        },
-                        "Data Science": {
-                            "Easy": "data cleaning task, basic analysis problem, simple visualization challenge",
-                            "Medium": "predictive modeling project, statistical analysis, data pipeline design",
-                            "Hard": "big data architecture, advanced statistical modeling, real-time analytics system"
                         }
                     }
                     
@@ -312,39 +317,25 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
                     track = st.session_state.selected_track
                     examples = track_examples.get(track, {}).get(st.session_state.selected_difficulty, "practical project challenge")
                     
-                    question_prompt = f"""You are an experienced technical interviewer conducting a {difficulty_level} level interview for a {track} position. 
-
-Create a realistic, specific interview question that:
-- Is scenario-based (like: "You're working on...", "A client needs...", "Your team is facing...")  
-- Focuses on practical problem-solving, not just theory
-- Is appropriate for {difficulty_level} level (examples: {examples})
-- Avoids topics already covered: {previous_topics_text}
-- Requires the candidate to walk through their thinking process
-- Is the type of question asked in real {track} interviews
-
-Generate only the question, make it conversational and specific:"""
+                    question_prompt = f"""Create a {difficulty_level} level interview question for {track} position. 
+                    Make it practical and scenario-based. Examples: {examples}
+                    Avoid topics: {previous_topics_text}
+                    Question:"""
                     
-                    st.write("Crafting your question...")
-                    question = generate_text(question_prompt, max_len=120, temperature=0.8)
+                    question = generate_text(question_prompt, max_len=100, temperature=0.8)
                     
-                    # If question is too short or generic, add more context
-                    if len(question.split()) < 10 or any(word in question.lower() for word in ['what is', 'define', 'explain the concept']):
-                        contextual_prompt = f"""Create a specific, scenario-based {difficulty_level} level interview question for {track}. 
-                        Start with a real-world situation like "You're building..." or "A company asks you to..." 
-                        Make it practical and detailed. Question:"""
-                        question = generate_text(contextual_prompt, max_len=100, temperature=0.9)
+                    # If question is too short or generic, use fallback
+                    if len(question.split()) < 5:
+                        question = get_fallback_response("")
                     
                     # Generate expected answer for scoring
-                    answer_prompt = f"""As a {track} expert, provide key points that a good candidate should cover when answering: "{question}"
+                    answer_prompt = f"""As a {track} expert, provide key points for answering: "{question}"
+                    List the main technical concepts and approaches:"""
                     
-                    List the main technical concepts, approaches, and considerations they should mention. Keep it concise:"""
-                    
-                    st.write("Preparing evaluation criteria...")
-                    expected_answer = generate_text(answer_prompt, max_len=200)
+                    expected_answer = generate_text(answer_prompt, max_len=150)
                     
                     st.session_state.questions.append(question)
                     st.session_state.expected_answers.append(expected_answer)
-                    status.update(label="✅ Question ready", state="complete")
 
             # Ask question if not already asked
             current_question = st.session_state.questions[current_q_index]
@@ -379,8 +370,8 @@ Generate only the question, make it conversational and specific:"""
                     st.session_state.user_answers.append(user_answer)
                     
                     # Generate coach feedback
-                    with st.status("📝 Coach analyzing your response...", expanded=False) as status:
-                        feedback_prompt = f"""You are an experienced {st.session_state.coach_style.lower()} interview coach providing feedback after this exchange:
+                    with st.spinner("📝 Coach analyzing your response..."):
+                        feedback_prompt = f"""You are an interview coach providing feedback after this exchange:
 
 QUESTION: {current_question}
 CANDIDATE'S ANSWER: {user_answer}
@@ -390,22 +381,13 @@ Provide specific, actionable feedback focusing on:
 - 1-2 specific areas for improvement  
 - One concrete suggestion for how to strengthen their response
 
-Keep it supportive but honest, like a real interview coach. Feedback:"""
+Keep it supportive but honest. Feedback:"""
                         
-                        st.write("Evaluating your response...")
-                        feedback = generate_text(feedback_prompt, max_len=180, temperature=0.7)
+                        feedback = generate_text(feedback_prompt, max_len=150, temperature=0.7)
                         
                         # Ensure feedback is constructive and not repetitive
                         if len(feedback.strip()) < 20 or "feedback" in feedback.lower():
-                            fallback_feedbacks = [
-                                "Good approach! To strengthen your answer, try adding a specific example from your experience and explain your decision-making process step by step.",
-                                "You covered the basics well. Consider discussing potential challenges you might face and how you'd handle them to show deeper thinking.",
-                                "Nice structure! Next time, include metrics or outcomes to demonstrate the impact of your approach - this shows results-oriented thinking.",
-                                "Solid understanding! Try walking through your thought process more explicitly - interviewers want to see how you break down complex problems."
-                            ]
-                            feedback = random.choice(fallback_feedbacks)
-                        
-                        status.update(label="✅ Feedback ready", state="complete")
+                            feedback = get_fallback_response("feedback")
                     
                     add_to_conversation("Coach", feedback, "Coach")
                     st.session_state.current_q += 1
@@ -415,7 +397,7 @@ Keep it supportive but honest, like a real interview coach. Feedback:"""
             # Interview completed
             st.session_state.interview_finished = True
             
-            # Generate final feedback quickly
+            # Generate final feedback
             if 'final_feedback_generated' not in st.session_state:
                 # Create a summary of their performance
                 answer_lengths = [len(ans.split()) for ans in st.session_state.user_answers]
@@ -441,10 +423,8 @@ Keep it supportive but honest, like a real interview coach. Feedback:"""
 **Next Steps**: Practice mock interviews, prepare concrete examples, and focus on explaining your problem-solving process step-by-step."""
 
                 st.session_state.final_feedback_generated = overall_feedback
-            else:
-                overall_feedback = st.session_state.final_feedback_generated
             
-            add_to_conversation("Coach", f"🎯 **Final Assessment**: {overall_feedback}", "Coach")
+            add_to_conversation("Coach", f"🎯 **Final Assessment**: {st.session_state.final_feedback_generated}", "Coach")
             st.rerun()
 
     else:
@@ -496,9 +476,10 @@ Keep it supportive but honest, like a real interview coach. Feedback:"""
         # Reset button
         if st.button("🔄 Start New Interview", type="primary", use_container_width=True):
             # Clear interview-related session state
-            keys_to_keep = ['model_loaded', 'model_loading', 'model_progress', 'tokenizer', 'model']
-            for key in list(st.session_state.keys()):
-                if key not in keys_to_keep:
+            for key in ['current_q', 'user_answers', 'conversation', 'interview_finished', 
+                       'questions', 'expected_answers', 'settings_confirmed', 
+                       'final_feedback_generated']:
+                if key in st.session_state:
                     del st.session_state[key]
             st.rerun()
 
