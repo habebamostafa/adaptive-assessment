@@ -560,7 +560,6 @@ def main():
             st.session_state.agent = RLAssessmentAgent(
                 env=st.session_state.env,
                 agent_type=st.session_state.agent_type,
-                strategy=AdaptiveStrategy(st.session_state.adaptation_strategy)
             )
             
             st.session_state.initialized = True
