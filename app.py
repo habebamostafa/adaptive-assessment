@@ -554,8 +554,7 @@ def main():
         # Initialize environment and agent
             st.session_state.env = AdaptiveAssessmentEnv(
                 track=st.session_state.track_selector,
-                max_questions=10,
-                confidence_threshold=0.8
+
             )
 
             # إنشاء Agent جديد
