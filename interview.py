@@ -5,7 +5,7 @@ import time
 import torch
 
 # --- Model Setup with Proper Caching ---
-MODEL_NAME = "google/flan-t5-large"  # Using a smaller model for better performance
+MODEL_NAME = "google/flan-t5-base"  # Using a smaller model for better performance
 HF_TOKEN = st.secrets.get("HF_TOKEN", None)
 
 # Initialize session state for model loading
@@ -74,37 +74,57 @@ def get_fallback_response(prompt):
         ]
         return random.choice(feedbacks)
     else:
+        # Return a relevant question based on the track
+        track = st.session_state.get('selected_track', 'Artificial Intelligence')
+        difficulty = st.session_state.get('selected_difficulty', 'Easy')
+        
         questions = {
-            "Artificial Intelligence": [
-                "Can you explain the difference between supervised and unsupervised learning?",
-                "What experience do you have with neural networks?",
-                "How would you handle an imbalanced dataset in a classification problem?"
-            ],
-            "Software Development": [
-                "Describe your experience with version control systems.",
-                "How do you approach debugging a complex issue?",
-                "What principles do you follow for writing clean, maintainable code?"
-            ],
-            "Web Development": [
-                "How do you ensure your web applications are accessible?",
-                "Describe your experience with responsive design.",
-                "What security considerations do you make when developing web applications?"
-            ]
+            "Artificial Intelligence": {
+                "Easy": [
+                    "What is the difference between supervised and unsupervised learning?",
+                    "Can you explain what a neural network is in simple terms?",
+                    "What are some common applications of machine learning you encounter daily?"
+                ],
+                "Medium": [
+                    "How would you handle overfitting in a machine learning model?",
+                    "Explain the bias-variance tradeoff in machine learning.",
+                    "What evaluation metrics would you use for a classification problem?"
+                ],
+                "Hard": [
+                    "How would you implement a transformer model for natural language processing?",
+                    "Explain how gradient descent optimization algorithms work.",
+                    "Discuss the ethical considerations in AI development and deployment."
+                ]
+            },
+            "Software Development": {
+                "Easy": [
+                    "What is version control and why is it important?",
+                    "Explain the concept of object-oriented programming.",
+                    "What are some key principles of writing clean code?"
+                ],
+                "Medium": [
+                    "How would you optimize a slow database query?",
+                    "Explain the Model-View-Controller architecture pattern.",
+                    "What testing methodologies do you follow in your development process?"
+                ],
+                "Hard": [
+                    "How would you design a scalable microservices architecture?",
+                    "Explain the CAP theorem and its implications for distributed systems.",
+                    "Describe your approach to securing a web application against common vulnerabilities."
+                ]
+            }
         }
         
-        track = st.session_state.get('selected_track', 'Software Development')
-        difficulty = st.session_state.get('selected_difficulty', 'Medium')
-        
-        if track in questions:
-            return random.choice(questions[track])
-        return "Thank you for your response. Let's continue with the next question."
+        if track in questions and difficulty in questions[track]:
+            return random.choice(questions[track][difficulty])
+        return "Can you explain your approach to problem-solving in technical projects?"
 
 @st.cache_resource(show_spinner=False)
 def load_model_components():
     """Load the model and tokenizer with proper caching"""
     try:
         # Use a smaller model for better performance
-        model_name = "google/flan-t5-large"
+        model_name = "google/flan-t5-base"
         
         if HF_TOKEN:
             tokenizer = AutoTokenizer.from_pretrained(model_name, token=HF_TOKEN)
@@ -252,9 +272,12 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
     # Display conversation
     st.subheader("Interview in Progress")
     
-    # Show progress
-    progress = st.session_state.current_q / st.session_state.selected_num_questions
-    st.progress(progress, text=f"Question {st.session_state.current_q + 1} of {st.session_state.selected_num_questions}")
+    # Show progress - Fixed the off-by-one error
+    if st.session_state.current_q < st.session_state.selected_num_questions:
+        progress = (st.session_state.current_q) / st.session_state.selected_num_questions
+        st.progress(progress, text=f"Question {st.session_state.current_q + 1} of {st.session_state.selected_num_questions}")
+    else:
+        st.progress(1.0, text=f"Completed {st.session_state.selected_num_questions} of {st.session_state.selected_num_questions} questions")
 
     # Conversation display
     conversation_container = st.container()
@@ -340,7 +363,7 @@ if st.session_state.model_loaded and st.session_state.get('settings_confirmed', 
             # Ask question if not already asked
             current_question = st.session_state.questions[current_q_index]
             question_asked = any(
-                msg.get("question_id") == current_q_index 
+                msg.get("question_id") == current_q_index and msg["role"] == "Interviewer"
                 for msg in st.session_state.get('conversation', [])
             )
             
@@ -391,6 +414,10 @@ Keep it supportive but honest. Feedback:"""
                     
                     add_to_conversation("Coach", feedback, "Coach")
                     st.session_state.current_q += 1
+                    
+                    # Check if interview is finished
+                    if st.session_state.current_q >= st.session_state.selected_num_questions:
+                        st.session_state.interview_finished = True
                     st.rerun()
 
         else:
