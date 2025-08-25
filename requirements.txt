@@ -30,6 +30,7 @@ langchain-community>=0.0.1
 python-dotenv>=1.0.0 
 huggingface-hub>=0.17.0
 
+librosa
 soundfile 
 openai
 gtts
