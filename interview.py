@@ -5,7 +5,7 @@ import time
 import torch
 
 # --- Model Setup with Proper Caching ---
-MODEL_NAME = "google/flan-t5-base"  # Using a smaller model for better performance
+MODEL_NAME = "google/flan-t5-large"  # Using a smaller model for better performance
 HF_TOKEN = st.secrets.get("HF_TOKEN", None)
 
 # Initialize session state for model loading
