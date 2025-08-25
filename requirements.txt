@@ -41,8 +41,6 @@ SpeechRecognition
 pydub
 gTTS
 
-# Extras
-streamlit-extras
 # Development tools (optional)
 pytest>=7.0.0
 black>=22.0.0
