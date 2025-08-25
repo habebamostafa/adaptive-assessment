@@ -155,23 +155,6 @@ def render_sidebar():
     )
     
     return selected_track, agent_type, adaptation_strategy, max_questions, confidence_threshold
-if st.button("🚀 Start Assessment"):
-    # إنشاء بيئة جديدة
-    st.session_state.env = AdaptiveAssessmentEnv(
-        track=st.session_state.track_selector,
-        max_questions=10,
-        confidence_threshold=0.8
-    )
-
-    # إنشاء Agent جديد
-    st.session_state.agent = RLAssessmentAgent(
-        env=st.session_state.env,
-        agent_type=st.session_state.agent_type,
-        strategy=AdaptiveStrategy(st.session_state.adaptation_strategy)
-    )
-    
-    st.session_state.initialized = True
-    st.success("✅ Assessment initialized! Ready to start.")
 
 # Analytics and visualizations
 def render_analytics():
@@ -568,7 +551,22 @@ def main():
 
         
         if st.button("🎯 start test", type="primary", use_container_width=True):
-            # Initialize environment and agent
+        # Initialize environment and agent
+            st.session_state.env = AdaptiveAssessmentEnv(
+                track=st.session_state.track_selector,
+                max_questions=10,
+                confidence_threshold=0.8
+            )
+
+            # إنشاء Agent جديد
+            st.session_state.agent = RLAssessmentAgent(
+                env=st.session_state.env,
+                agent_type=st.session_state.agent_type,
+                strategy=AdaptiveStrategy(st.session_state.adaptation_strategy)
+            )
+            
+            st.session_state.initialized = True
+            st.success("✅ Assessment initialized! Ready to start.")
             st.session_state.env = AdaptiveAssessmentEnv(track=selected_track)
             st.session_state.env.max_questions = max_questions
             st.session_state.env.confidence_threshold = confidence_threshold
