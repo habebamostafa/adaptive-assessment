@@ -8,10 +8,11 @@ class StudentDB:
         self.init_database()
     
     def init_database(self):
-        """Initialize database tables"""
+        """Initialize database tables with column checks"""
         conn = sqlite3.connect(self.db_name)
         cursor = conn.cursor()
         
+        # Create table if not exists
         cursor.execute('''
             CREATE TABLE IF NOT EXISTS students (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -19,10 +20,25 @@ class StudentDB:
                 email TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
                 track TEXT NOT NULL,
-                created_at TEXT NOT NULL,
-                status TEXT DEFAULT 'active'
+                created_at TEXT,
+                status TEXT
             )
         ''')
+        
+        # Check if created_at column exists, if not add it
+        cursor.execute("PRAGMA table_info(students)")
+        columns = [column[1] for column in cursor.fetchall()]
+        
+        if 'created_at' not in columns:
+            cursor.execute("ALTER TABLE students ADD COLUMN created_at TEXT")
+        
+        if 'status' not in columns:
+            cursor.execute("ALTER TABLE students ADD COLUMN status TEXT DEFAULT 'active'")
+        
+        # Update existing records with default values if needed
+        cursor.execute("UPDATE students SET created_at = ? WHERE created_at IS NULL", 
+                      (datetime.now().isoformat(),))
+        cursor.execute("UPDATE students SET status = 'active' WHERE status IS NULL")
         
         conn.commit()
         conn.close()
@@ -41,8 +57,8 @@ class StudentDB:
             created_at = datetime.now().isoformat()
             
             cursor.execute(
-                "INSERT INTO students (name, email, password, track, created_at) VALUES (?, ?, ?, ?, ?)",
-                (name, email, hashed_password, track, created_at)
+                "INSERT INTO students (name, email, password, track, created_at, status) VALUES (?, ?, ?, ?, ?, ?)",
+                (name, email, hashed_password, track, created_at, 'active')
             )
             
             conn.commit()
@@ -75,8 +91,8 @@ class StudentDB:
                 "name": student[1],
                 "email": student[2],
                 "track": student[3],
-                "created_at": student[4],
-                "status": student[5]
+                "created_at": student[4] or datetime.now().isoformat(),
+                "status": student[5] or 'active'
             }
         return None
     
@@ -95,8 +111,8 @@ class StudentDB:
                 "name": s[1],
                 "email": s[2],
                 "track": s[3],
-                "created_at": s[4],
-                "status": s[5]
+                "created_at": s[4] or "Unknown",
+                "status": s[5] or 'active'
             }
             for s in students
         ]
@@ -120,8 +136,8 @@ class StudentDB:
                 "name": student[1],
                 "email": student[2],
                 "track": student[3],
-                "created_at": student[4],
-                "status": student[5]
+                "created_at": student[4] or "Unknown",
+                "status": student[5] or 'active'
             }
         return None
     
@@ -162,9 +178,10 @@ class StudentDB:
         cursor.execute("DELETE FROM students WHERE id = ?", (student_id,))
         
         conn.commit()
+        deleted = cursor.rowcount > 0
         conn.close()
         
-        return cursor.rowcount > 0
+        return deleted
 
 # Create database instance
 db = StudentDB()
