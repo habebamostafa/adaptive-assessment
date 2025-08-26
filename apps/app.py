@@ -9,22 +9,43 @@ import requests
 import os
 from urllib.parse import parse_qs, urlparse
 
-# دالة للتكامل مع n8n
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+
+from data.api import app as fastapi_app
+from n8n_integration import n8n_client
+
+# تعديل دالة integrate_with_n8n
 def integrate_with_n8n():
-    # جلب session_id من URL parameters
-    query_params = st.experimental_get_query_params()
-    session_id = query_params.get('session', [None])[0]
-    
-    if session_id and 'student_context' not in st.session_state:
-        # جلب بيانات الطالب من API
-        try:
-            response = requests.get(f"http://localhost:8000/api/session/{session_id}")
+    """التكامل مع n8n لاسترداد بيانات الجلسة"""
+    try:
+        # جلب session_id من query parameters
+        query_params = st.experimental_get_query_params()
+        session_id = query_params.get('session_id', [None])[0]
+        
+        if session_id and 'student_context' not in st.session_state:
+            # استخدام API المحلي لاسترداد بيانات الجلسة
+            response = requests.get(
+                f"http://localhost:8000/api/session/{session_id}",
+                timeout=5
+            )
+            
             if response.status_code == 200:
                 context = response.json()
                 st.session_state.student_context = context
                 st.session_state.student_id = context['student_id']
-        except:
-            pass
+                st.session_state.session_id = session_id
+                
+                # إرسال إشعار إلى n8n أن الجلسة بدأت
+                n8n_client.trigger_workflow("assessment_started", {
+                    "session_id": session_id,
+                    "student_id": context['student_id'],
+                    "started_at": datetime.now().isoformat()
+                })
+    except Exception as e:
+        # لا توقف التطبيق إذا فشل الاتصال بـ n8n
+        st.sidebar.warning("الوضع غير متصل - بعض الميزات قد لا تعمل")
 
 # دالة لحفظ النتائج
 def save_results_to_n8n(results):
