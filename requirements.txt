@@ -30,16 +30,7 @@ langchain-community>=0.0.1
 python-dotenv>=1.0.0 
 huggingface-hub>=0.17.0
 
-# Audio processing
-sounddevice
-soundfile
-audioread
-numba
-llvmlite
-# Speech
-SpeechRecognition
-pydub
-gTTS
+fastapi
 
 # Development tools (optional)
 pytest>=7.0.0

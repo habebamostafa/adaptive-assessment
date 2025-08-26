@@ -5,7 +5,37 @@ from plotly.subplots import make_subplots
 import pandas as pd
 import json
 from datetime import datetime
+import requests
+import os
+from urllib.parse import parse_qs, urlparse
 
+# دالة للتكامل مع n8n
+def integrate_with_n8n():
+    # جلب session_id من URL parameters
+    query_params = st.experimental_get_query_params()
+    session_id = query_params.get('session', [None])[0]
+    
+    if session_id and 'student_context' not in st.session_state:
+        # جلب بيانات الطالب من API
+        try:
+            response = requests.get(f"http://localhost:8000/api/session/{session_id}")
+            if response.status_code == 200:
+                context = response.json()
+                st.session_state.student_context = context
+                st.session_state.student_id = context['student_id']
+        except:
+            pass
+
+# دالة لحفظ النتائج
+def save_results_to_n8n(results):
+    try:
+        # إرسال النتائج إلى n8n
+        webhook_url = "http://localhost:5678/webhook"
+        response = requests.post(webhook_url, json=results)
+        return response.status_code == 200
+    except:
+        return False
+    
 # Import our enhanced modules
 from core.environment import AdaptiveAssessmentEnv
 from core.agent import RLAssessmentAgent, AdaptiveStrategy
@@ -504,7 +534,7 @@ def render_results():
 def main():
     """Main application function"""
     initialize_session_state()
-    
+    integrate_with_n8n()
     # Header
     st.markdown("""
     <div class="main-header">
@@ -580,8 +610,19 @@ def main():
                 st.error("❌ error")
     
     elif st.session_state.show_results:
-        render_results()
-    
+        
+        final_results = {
+            'student_id': st.session_state.get('student_id'),
+            'app_type': 'assessment',
+            'score': env.get_final_score(),
+            'ability_level': env.student_ability,
+            'questions_answered': env.total_questions_asked,
+            'time_spent': env.get_time_spent(),
+            'details': env.get_assessment_summary()
+        }
+        
+        save_results_to_n8n(final_results)
+        render_results()    
     else:
         # Main assessment interface
         if st.session_state.current_question:
