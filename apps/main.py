@@ -1,4 +1,8 @@
 import streamlit as st
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), 'data'))
+
 from data.database import db
 
 # Page configuration
